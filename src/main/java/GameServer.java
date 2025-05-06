@@ -9,6 +9,8 @@ public class GameServer {
     private GameState gameState;
     private boolean running = true;
     private Timer gameTimer;
+    // CORRECCIÓN: Añadir variable para controlar el intervalo de actualizaciones
+    private static final int UPDATE_INTERVAL = 1000 / 30; // 30 FPS en lugar de 60 para reducir carga
 
     public GameServer(int port) throws IOException {
         try {
@@ -62,14 +64,18 @@ public class GameServer {
             @Override
             public void run() {
                 try {
+                    // CORRECCIÓN: Ejecutar actualización del juego dentro de un bloque try-catch
                     gameState.update();
-                    broadcastState();
+                    // Solo emitir actualizaciones cuando hay clientes conectados
+                    if (!clients.isEmpty()) {
+                        broadcastState();
+                    }
                 } catch (Exception e) {
                     System.err.println("Error in game loop: " + e.getMessage());
                     e.printStackTrace();
                 }
             }
-        }, 0, 1000 / 60); // 60 FPS
+        }, 0, UPDATE_INTERVAL);
 
         System.out.println("Game loop started");
     }

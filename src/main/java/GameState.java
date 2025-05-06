@@ -38,15 +38,12 @@ public class GameState {
 
     public void addPlayer(int playerId) {
         synchronized(gameStateLock) {
-            // Posicionar barco centrado según número de jugador
-            int shipX = boardWidth / 2 - TILE_SIZE;
-            if (ships.size() > 0) {
-                // Si hay más de un jugador, distribuir las naves
-                shipX = TILE_SIZE * 2 + (playerId * TILE_SIZE * 3);
-            }
+            // CORRECCIÓN: Modificamos la fórmula para que funcione correctamente con playerId 0
+            // Usar una fórmula de distribución que funcione bien para todos los ID, incluyendo 0
+            int shipX = TILE_SIZE * 2 + (playerId * TILE_SIZE * 6);
 
-            // Asegurar que el barco esté dentro de los límites
-            shipX = Math.max(0, Math.min(shipX, boardWidth - TILE_SIZE * 2));
+            // Si la posición calculada está fuera de los límites, ajustarla
+            shipX = Math.max(TILE_SIZE, Math.min(shipX, boardWidth - TILE_SIZE * 3));
 
             GameObject ship = new GameObject(shipX, boardHeight - TILE_SIZE * 2,
                     TILE_SIZE * 2, TILE_SIZE, "SHIP", playerId);
@@ -113,8 +110,10 @@ public class GameState {
                 return;
             }
 
-            // Si el jugador no está activo, ignorar sus entradas
-            if (!activePlayerStatus.getOrDefault(playerId, false)) {
+            // CORRECCIÓN: Verificación mejorada para el estado activo del jugador
+            // Comprobar específicamente si el playerId existe y está activo
+            if (!activePlayerStatus.containsKey(playerId) || !activePlayerStatus.get(playerId)) {
+                System.out.println("Player " + playerId + " is not active. Input ignored.");
                 return;
             }
 
@@ -126,17 +125,21 @@ public class GameState {
 
             if (input.equals("LEFT") && ship.x - TILE_SIZE/2 >= 0) {
                 ship.x -= TILE_SIZE/2;
+                System.out.println("Player " + playerId + " moved LEFT to: " + ship.x);
             } else if (input.equals("RIGHT") && ship.x + ship.width + TILE_SIZE/2 <= boardWidth) {
                 ship.x += TILE_SIZE/2;
+                System.out.println("Player " + playerId + " moved RIGHT to: " + ship.x);
             } else if (input.equals("SHOOT")) {
                 // Crear bala en el centro del barco
                 int bulletX = ship.x + (ship.width / 2) - (TILE_SIZE / 16);
                 GameObject bullet = new GameObject(bulletX, ship.y,
                         TILE_SIZE / 8, TILE_SIZE / 2, "BULLET", playerId);
                 bullets.add(bullet);
+                System.out.println("Player " + playerId + " SHOOT from position: " + ship.x);
             }
         }
     }
+
 
     public void update() {
         synchronized(gameStateLock) {

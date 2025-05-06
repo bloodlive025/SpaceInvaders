@@ -29,6 +29,9 @@ public class ClientHandler extends Thread {
             // Agregar jugador al estado del juego después de la configuración inicial
             gameState.addPlayer(playerId);
 
+            // CORRECCIÓN: Enviar estado inicial del juego justo después de la conexión
+            sendInitialState();
+
             System.out.println("ClientHandler initialized for player: " + playerId);
         } catch (IOException e) {
             System.err.println("Error initializing client handler: " + e.getMessage());
@@ -41,6 +44,17 @@ public class ClientHandler extends Thread {
         }
     }
 
+    // CORRECCIÓN: Añadir método para enviar el estado inicial del juego
+    private void sendInitialState() throws IOException {
+        Message initialState = new Message("UPDATE_STATE");
+        initialState.objects = gameState.getGameObjects();
+        initialState.score = gameState.getScore();
+        initialState.gameOver = gameState.isGameOver();
+
+        sendMessage(initialState);
+        System.out.println("Initial game state sent to player: " + playerId);
+    }
+
     @Override
     public void run() {
         try {
@@ -49,8 +63,14 @@ public class ClientHandler extends Thread {
                     Object obj = in.readObject();
                     if (obj instanceof Message) {
                         Message message = (Message) obj;
+                        System.out.println("Received message from player " + playerId + ": " + message);
+
                         if (message.action.equals("PLAYER_INPUT")) {
+                            System.out.println("Player " + playerId + " input: " + message.input);
                             gameState.handleInput(playerId, message.input);
+
+                            // CORRECCIÓN: Enviar actualización inmediata después de recibir input
+                            sendMessage(createUpdateMessage());
                         }
                     }
                 } catch (ClassNotFoundException e) {
@@ -62,6 +82,15 @@ public class ClientHandler extends Thread {
         } finally {
             disconnect();
         }
+    }
+
+    // CORRECCIÓN: Método para crear mensaje de actualización
+    private Message createUpdateMessage() {
+        Message update = new Message("UPDATE_STATE");
+        update.objects = gameState.getGameObjects();
+        update.score = gameState.getScore();
+        update.gameOver = gameState.isGameOver();
+        return update;
     }
 
     public void sendMessage(Message message) throws IOException {
