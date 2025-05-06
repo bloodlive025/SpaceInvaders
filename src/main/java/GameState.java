@@ -21,6 +21,8 @@ public class GameState {
     private boolean gameOver = false;
     // Nuevo: variable para verificar si todos los jugadores han sido eliminados
     private boolean allPlayersEliminated = false;
+    // Nuevo: Variable para rastrear si el juego se ha iniciado realmente
+    private boolean gameHasStarted = false;
 
     private Random random = new Random();
     private long lastAlienShotTime = 0;
@@ -53,8 +55,15 @@ public class GameState {
             activePlayerStatus.put(playerId, true);
 
             // Si era game over y se une un nuevo jugador, reiniciar el juego
-            if (allPlayersEliminated) {
+            if (allPlayersEliminated && gameHasStarted) {
                 resetGame();
+            }
+
+            // Marcar que el juego ha iniciado cuando se conecta al menos un jugador
+            if (!gameHasStarted) {
+                gameHasStarted = true;
+                allPlayersEliminated = false;
+                gameOver = false;
             }
 
             System.out.println("Player " + playerId + " added at position: " + shipX);
@@ -72,9 +81,11 @@ public class GameState {
         }
     }
 
-    // Nuevo método para verificar si todos los jugadores han sido eliminados
+    // Método modificado para verificar si todos los jugadores han sido eliminados
     private void checkAllPlayersEliminated() {
-        if (ships.isEmpty() || !activePlayerStatus.containsValue(true)) {
+        // Solo considerar que todos los jugadores fueron eliminados si el juego ha iniciado
+        // y no hay jugadores activos
+        if (gameHasStarted && (ships.isEmpty() || !activePlayerStatus.containsValue(true))) {
             allPlayersEliminated = true;
             gameOver = true;
             System.out.println("All players have been eliminated. Game over!");
@@ -129,7 +140,12 @@ public class GameState {
 
     public void update() {
         synchronized(gameStateLock) {
-            // Si no hay jugadores activos, no actualizar
+            // Si el juego no ha iniciado o no hay jugadores activos, no mostrar game over
+            if (!gameHasStarted) {
+                return;
+            }
+
+            // Si no hay jugadores activos, verificar si todos fueron eliminados
             if ((ships.isEmpty() || !activePlayerStatus.containsValue(true)) && !allPlayersEliminated) {
                 checkAllPlayersEliminated();
                 return;
