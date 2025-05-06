@@ -9,8 +9,7 @@ public class GameServer {
     private GameState gameState;
     private boolean running = true;
     private Timer gameTimer;
-    // CORRECCIÓN: Añadir variable para controlar el intervalo de actualizaciones
-    private static final int UPDATE_INTERVAL = 1000 / 30; // 30 FPS en lugar de 60 para reducir carga
+    private static final int UPDATE_INTERVAL = 1000 / 30;
 
     public GameServer(int port) throws IOException {
         try {
@@ -24,31 +23,17 @@ public class GameServer {
     }
 
     public void start() {
-        // Hilo para aceptar conexiones de clientes
         new Thread(() -> {
             while (running) {
                 try {
                     System.out.println("Waiting for client connections...");
                     Socket clientSocket = serverSocket.accept();
                     System.out.println("New client connected: " + clientSocket.getInetAddress());
-
-                    try {
-                        // Crear y iniciar un handler para el cliente
-                        int playerId = clients.size();
-                        ClientHandler clientHandler = new ClientHandler(clientSocket, gameState, playerId);
-                        clients.add(clientHandler);
-                        clientHandler.start();
-
-                        System.out.println("Client handler started. Total clients: " + clients.size());
-                    } catch (IOException e) {
-                        System.err.println("Failed to initialize client handler: " + e.getMessage());
-                        e.printStackTrace();
-                        try {
-                            clientSocket.close();
-                        } catch (IOException ex) {
-                            // Ignorar
-                        }
-                    }
+                    int playerId = clients.size();
+                    ClientHandler clientHandler = new ClientHandler(clientSocket, gameState, playerId);
+                    clients.add(clientHandler);
+                    clientHandler.start();
+                    System.out.println("Client handler started. Total clients: " + clients.size());
                 } catch (IOException e) {
                     if (running) {
                         System.err.println("Error accepting client connection: " + e.getMessage());
@@ -58,15 +43,12 @@ public class GameServer {
             }
         }).start();
 
-        // Bucle principal del juego
         gameTimer = new Timer("GameLoop");
         gameTimer.schedule(new TimerTask() {
             @Override
             public void run() {
                 try {
-                    // CORRECCIÓN: Ejecutar actualización del juego dentro de un bloque try-catch
                     gameState.update();
-                    // Solo emitir actualizaciones cuando hay clientes conectados
                     if (!clients.isEmpty()) {
                         broadcastState();
                     }
@@ -85,11 +67,10 @@ public class GameServer {
 
         Message message = new Message("UPDATE_STATE");
         message.objects = gameState.getGameObjects();
-        message.score = gameState.getScore();
         message.gameOver = gameState.isGameOver();
+        message.playerScores.putAll(gameState.getPlayerScores()); // Use getter method
 
         List<ClientHandler> disconnectedClients = new ArrayList<>();
-
         for (ClientHandler client : clients) {
             try {
                 client.sendMessage(message);
@@ -99,7 +80,6 @@ public class GameServer {
             }
         }
 
-        // Eliminar clientes desconectados
         for (ClientHandler client : disconnectedClients) {
             clients.remove(client);
             System.out.println("Client removed. Remaining clients: " + clients.size());
@@ -111,15 +91,11 @@ public class GameServer {
         if (gameTimer != null) {
             gameTimer.cancel();
         }
-
         for (ClientHandler client : clients) {
             try {
                 client.interrupt();
-            } catch (Exception e) {
-                // Ignorar errores al cerrar
-            }
+            } catch (Exception e) {}
         }
-
         try {
             if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
@@ -127,7 +103,6 @@ public class GameServer {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
         System.out.println("Server stopped");
     }
 
@@ -136,10 +111,7 @@ public class GameServer {
         try {
             GameServer server = new GameServer(port);
             server.start();
-
             System.out.println("Press Ctrl+C to stop the server");
-
-            // Agregar hook de apagado
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 System.out.println("Shutting down server...");
                 server.stop();

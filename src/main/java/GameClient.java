@@ -7,26 +7,21 @@ public class GameClient extends JPanel implements KeyListener {
     private GameRenderer renderer;
     private int playerId;
     private boolean connectedToServer = false;
-    private boolean playerEliminated = false; // Nueva variable para rastrear si el jugador ha sido eliminado
+    private boolean playerEliminated = false;
 
     public GameClient(String ip, int port) throws Exception {
-        // Tamaño ajustado para el tablero más grande
         setPreferredSize(new Dimension(512, 512));
         setBackground(Color.black);
         setFocusable(true);
         addKeyListener(this);
 
         try {
-            // Inicializar conexión de red
             networkHandler = new ClientNetworkHandler(ip, port);
-            networkHandler.setClient(this); // Importante: establecer referencia al cliente
+            networkHandler.setClient(this);
             renderer = new GameRenderer();
             playerId = networkHandler.getPlayerId();
             connectedToServer = true;
-
-            // Iniciar hilo de red
             networkHandler.start();
-
             System.out.println("Client initialized with playerId: " + playerId);
         } catch (Exception e) {
             System.err.println("Failed to initialize game client: " + e.getMessage());
@@ -38,16 +33,14 @@ public class GameClient extends JPanel implements KeyListener {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         if (connectedToServer) {
-            renderer.render(g, networkHandler.getGameObjects(), networkHandler.getScore(), networkHandler.isGameOver());
+            renderer.render(g, networkHandler.getGameObjects(), networkHandler.getScore(playerId), networkHandler.isGameOver());
 
-            // Mostrar instrucciones
             g.setColor(Color.white);
             g.setFont(new Font("Arial", Font.PLAIN, 12));
             g.drawString("Flechas ← → para mover, Espacio para disparar", 10, 480);
             g.drawString("¡Destruye cada bloque alienígena individualmente!", 10, 495);
             g.drawString("¡Cuidado! Algunos alienígenas disparan rayos rojos", 10, 510);
 
-            // Comprobar si el jugador ha sido eliminado pero el juego continúa
             boolean playerShipExists = false;
             for (GameObject obj : networkHandler.getGameObjects()) {
                 if (obj.type.equals("SHIP") && obj.playerId == playerId) {
@@ -67,7 +60,6 @@ public class GameClient extends JPanel implements KeyListener {
                 g.drawString("Presiona ENTER para reiniciar", 10, 525);
             }
         } else {
-            // Renderizar mensaje de desconexión
             g.setColor(Color.RED);
             g.setFont(new Font("Arial", Font.BOLD, 24));
             g.drawString("Desconectado del servidor", 100, 250);
@@ -80,7 +72,6 @@ public class GameClient extends JPanel implements KeyListener {
     public void keyPressed(KeyEvent e) {
         if (!connectedToServer) return;
 
-        // No enviar entradas si el jugador ha sido eliminado
         if (playerEliminated && e.getKeyCode() != KeyEvent.VK_ENTER) {
             return;
         }
@@ -88,7 +79,7 @@ public class GameClient extends JPanel implements KeyListener {
         if (networkHandler.isGameOver()) {
             if (e.getKeyCode() == KeyEvent.VK_ENTER) {
                 networkHandler.sendInput("RESTART");
-                playerEliminated = false; // Reiniciar el estado del jugador
+                playerEliminated = false;
                 return;
             }
         }
@@ -108,30 +99,24 @@ public class GameClient extends JPanel implements KeyListener {
     @Override
     public void keyReleased(KeyEvent e) {}
 
-    // Método para manejar la pérdida de conexión
     public void connectionLost() {
         connectedToServer = false;
         repaint();
-
         JOptionPane.showMessageDialog(this,
                 "Se ha perdido la conexión con el servidor.\nReinicia la aplicación para volver a conectar.",
                 "Error de Conexión", JOptionPane.ERROR_MESSAGE);
     }
 
     public static void main(String[] args) {
-        // Configurar la UI en el hilo EDT
         SwingUtilities.invokeLater(() -> {
             String ip = JOptionPane.showInputDialog("Introduce la dirección IP del servidor:", "localhost");
             if (ip == null || ip.trim().isEmpty()) {
                 System.exit(0);
             }
-
             int port = 12345;
-
             JFrame frame = new JFrame("Space Invaders Mejorado - Cliente");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setResizable(false);
-
             try {
                 GameClient client = new GameClient(ip, port);
                 frame.add(client);

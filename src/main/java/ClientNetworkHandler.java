@@ -1,7 +1,7 @@
+import javax.swing.*;
 import java.net.*;
 import java.io.*;
 import java.util.*;
-import javax.swing.*;
 
 public class ClientNetworkHandler extends Thread {
     private Socket socket;
@@ -13,34 +13,25 @@ public class ClientNetworkHandler extends Thread {
     private int playerId;
     private GameClient client;
     private boolean connected = false;
-    // CORRECCIÓN: Añadir variable para controlar intentos de reconexión
     private boolean reconnecting = false;
     private int reconnectAttempts = 0;
     private static final int MAX_RECONNECT_ATTEMPTS = 3;
     private String serverIp;
     private int serverPort;
+    private Map<Integer, Integer> playerScores = new HashMap<>();
 
     public ClientNetworkHandler(String ip, int port) throws IOException {
-        // CORRECCIÓN: Guardar IP y puerto para posibles reconexiones
         this.serverIp = ip;
         this.serverPort = port;
-
         try {
             socket = new Socket(ip, port);
-
-            // CRÍTICO: primero crear el output stream y flush antes de crear el input stream
             out = new ObjectOutputStream(socket.getOutputStream());
             out.flush();
-
             in = new ObjectInputStream(socket.getInputStream());
-
-            // Lee el ID del jugador como un entero directo
             playerId = in.readInt();
             connected = true;
             System.out.println("Connected to server with playerId: " + playerId);
-
-            // CORRECCIÓN: Añadir tiempo de espera para timeout de socket
-            socket.setSoTimeout(10000); // 10 segundos de timeout
+            socket.setSoTimeout(10000);
         } catch (IOException e) {
             System.err.println("Connection error: " + e.getMessage());
             throw new IOException("Failed to connect to server at " + ip + ":" + port, e);
@@ -58,19 +49,20 @@ public class ClientNetworkHandler extends Thread {
                         if (message.action.equals("UPDATE_STATE")) {
                             synchronized (this) {
                                 gameObjects = message.objects;
-                                score = message.score;
                                 gameOver = message.gameOver;
+                                playerScores.clear();
+                                playerScores.putAll(message.playerScores);
+                                score = playerScores.getOrDefault(playerId, 0);
                             }
                             updateClient();
+                        } else {
+                            System.err.println("Received unknown object type: " + obj.getClass().getName());
                         }
-                    } else {
-                        System.err.println("Received unknown object type: " + obj.getClass().getName());
                     }
                 } catch (ClassNotFoundException e) {
                     System.err.println("Error reading object: " + e.getMessage());
                     e.printStackTrace();
                 } catch (SocketTimeoutException e) {
-                    // CORRECCIÓN: Manejar timeout - podría intentar ping al servidor
                     System.out.println("Socket timeout - checking connection status");
                     if (!pingServer()) {
                         throw new IOException("Server not responding");
@@ -80,8 +72,6 @@ public class ClientNetworkHandler extends Thread {
         } catch (IOException e) {
             System.err.println("Connection lost: " + e.getMessage());
             e.printStackTrace();
-
-            // CORRECCIÓN: Intento de reconexión automática
             if (!reconnecting && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
                 attemptReconnect();
             } else {
@@ -90,14 +80,11 @@ public class ClientNetworkHandler extends Thread {
         }
     }
 
-    // CORRECCIÓN: Método para verificar la conexión con el servidor
     private boolean pingServer() {
         try {
             if (socket.isClosed() || !socket.isConnected()) {
                 return false;
             }
-
-            // Envía un mensaje simple para verificar conexión
             synchronized (out) {
                 Message ping = new Message("PING");
                 out.writeObject(ping);
@@ -111,55 +98,37 @@ public class ClientNetworkHandler extends Thread {
         }
     }
 
-    // CORRECCIÓN: Método para intentar reconexión
     private void attemptReconnect() {
         reconnecting = true;
         reconnectAttempts++;
-
         new Thread(() -> {
             try {
                 System.out.println("Attempting to reconnect... (Attempt " + reconnectAttempts + ")");
-
-                // Cerrar recursos actuales
                 if (socket != null && !socket.isClosed()) {
                     socket.close();
                 }
-
-                // Intentar nueva conexión
                 socket = new Socket(serverIp, serverPort);
-
                 out = new ObjectOutputStream(socket.getOutputStream());
                 out.flush();
-
                 in = new ObjectInputStream(socket.getInputStream());
-
-                // Leer ID de jugador
                 playerId = in.readInt();
                 connected = true;
                 reconnecting = false;
-
                 socket.setSoTimeout(10000);
-
                 System.out.println("Reconnected successfully with playerId: " + playerId);
-
-                // Reiniciar el hilo principal
                 this.run();
-
             } catch (IOException e) {
                 System.err.println("Reconnection failed: " + e.getMessage());
                 reconnecting = false;
-
                 if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
                     try {
-                        Thread.sleep(2000); // Esperar antes de reintentar
+                        Thread.sleep(2000);
                         attemptReconnect();
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                     }
                 } else {
                     disconnect();
-
-                    // Notificar al cliente
                     if (client != null) {
                         SwingUtilities.invokeLater(() -> {
                             client.connectionLost();
@@ -183,24 +152,19 @@ public class ClientNetworkHandler extends Thread {
             System.out.println("Not connected - cannot send input");
             return;
         }
-
         try {
             Message message = new Message("PLAYER_INPUT");
             message.input = input;
             message.playerId = playerId;
-
             System.out.println("Sending input: " + input + " for player: " + playerId);
-
-            synchronized (out) {  // Sincronizar el acceso al output stream
+            synchronized (out) {
                 out.writeObject(message);
                 out.flush();
-                out.reset();  // Muy importante para evitar problemas de caché
+                out.reset();
             }
         } catch (IOException e) {
             System.err.println("Error sending input: " + e.getMessage());
             e.printStackTrace();
-
-            // CORRECCIÓN: No desconectar inmediatamente, intentar reconectar
             if (!reconnecting && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
                 attemptReconnect();
             } else {
@@ -213,8 +177,8 @@ public class ClientNetworkHandler extends Thread {
         return new ArrayList<>(gameObjects);
     }
 
-    public synchronized int getScore() {
-        return score;
+    public synchronized int getScore(int playerId) {
+        return playerScores.getOrDefault(playerId, 0);
     }
 
     public synchronized boolean isGameOver() {
@@ -244,8 +208,6 @@ public class ClientNetworkHandler extends Thread {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
-            // Notificar al cliente
             if (client != null) {
                 SwingUtilities.invokeLater(() -> {
                     client.connectionLost();

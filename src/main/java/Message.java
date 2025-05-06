@@ -1,16 +1,18 @@
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Message implements Serializable {
-    private static final long serialVersionUID = 2L; // Incrementado para evitar problemas de compatibilidad
+    private static final long serialVersionUID = 2L;
 
-    // Atributos
     String action; // e.g., "UPDATE_STATE", "PLAYER_INPUT"
-    ArrayList<GameObject> objects; // Estado del juego
+    ArrayList<GameObject> objects; // Game state
     int score;
     boolean gameOver;
     String input; // e.g., "LEFT", "RIGHT", "SHOOT", "RESTART"
     int playerId;
+    Map<Integer, Integer> playerScores = new HashMap<>(); // Individual player scores
 
     public Message(String action) {
         this.action = action;
@@ -30,6 +32,7 @@ public class Message implements Serializable {
                 ", objects.size=" + (objects != null ? objects.size() : 0) +
                 ", score=" + score +
                 ", gameOver=" + gameOver +
+                ", playerScores=" + playerScores +
                 '}';
     }
 }
