@@ -11,11 +11,14 @@ public class GameState {
     private Map<Integer, GameObject> ships = new ConcurrentHashMap<>(); // Thread-safe
     private List<GameObject> alienBlocks = Collections.synchronizedList(new ArrayList<>()); // Bloques individuales de aliens
     private List<GameObject> bullets = Collections.synchronizedList(new ArrayList<>());
+    private List<GameObject> alienBullets = Collections.synchronizedList(new ArrayList<>()); // Balas de los aliens
     private int alienVelocityX = 1;
     private int alienCount = 0;
     private int score = 0;
     private boolean gameOver = false;
     private Random random = new Random();
+    private long lastAlienShotTime = 0;
+    private int alienShotInterval = 500; // Milisegundos entre disparos
 
     // Añadir sincronización
     private final Object gameStateLock = new Object();
@@ -130,21 +133,30 @@ public class GameState {
                 }
             }
 
-            // Mover balas y detectar colisiones
+            // Lógica para que los aliens disparen
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - lastAlienShotTime > alienShotInterval) {
+                alienShoot();
+                lastAlienShotTime = currentTime;
+
+                // Ajustar la velocidad de disparo según la dificultad
+                // Cuantos menos aliens haya, más rápido dispararán
+                alienShotInterval = Math.max(200, 1000 - (1000 - alienCount * 5));
+            }
+
+            // Mover balas del jugador y detectar colisiones
             Iterator<GameObject> bulletIter = bullets.iterator();
             while (bulletIter.hasNext()) {
                 GameObject bullet = bulletIter.next();
-                bullet.y -= 10; // Velocidad de la bala
+                bullet.y -= 10; // Velocidad de la bala hacia arriba
 
                 // Verificar colisiones con aliens
-                boolean bulletHit = false;
                 for (GameObject alien : alienBlocks) {
                     if (!bullet.used && alien.alive && detectCollision(bullet, alien)) {
                         bullet.used = true;
                         alien.alive = false;
                         alienCount--;
                         score += 100;
-                        bulletHit = true;
                         System.out.println("Alien block hit! Score: " + score + ", Alien blocks left: " + alienCount);
                         break;  // Una bala solo puede golpear un bloque
                     }
@@ -156,14 +168,91 @@ public class GameState {
                 }
             }
 
+            // Mover balas de los aliens y detectar colisiones
+            Iterator<GameObject> alienBulletIter = alienBullets.iterator();
+            while (alienBulletIter.hasNext()) {
+                GameObject alienBullet = alienBulletIter.next();
+                alienBullet.y += 7; // Velocidad de la bala hacia abajo
+
+                // Verificar colisiones con las naves de los jugadores
+                for (GameObject ship : ships.values()) {
+                    if (!alienBullet.used && detectCollision(alienBullet, ship)) {
+                        alienBullet.used = true;
+                        gameOver = true;
+                        System.out.println("Player hit by alien bullet! Game over!");
+                        break;
+                    }
+                }
+
+                // Eliminar balas usadas o fuera de pantalla
+                if (alienBullet.used || alienBullet.y > boardHeight) {
+                    alienBulletIter.remove();
+                }
+            }
+
             // Pasar al siguiente nivel cuando no quedan aliens
             if (alienCount == 0) {
                 score += 1000; // Puntos de bonificación
                 System.out.println("Level completed! Bonus: 1000. New score: " + score);
                 alienBlocks.clear();
                 bullets.clear();
+                alienBullets.clear();
                 createAliens();
             }
+        }
+    }
+
+    // Método para que los aliens disparen
+    private void alienShoot() {
+        if (alienBlocks.isEmpty()) return;
+
+        // Encontrar aliens en la "primera línea" (los más bajos en cada columna)
+        Map<Integer, GameObject> frontLineAliens = new HashMap<>();
+
+        for (GameObject alien : alienBlocks) {
+            if (!alien.alive) continue;
+
+            // Usamos la coordenada X como clave para agrupar aliens por columna
+            int column = alien.x / TILE_SIZE;
+
+            // Si no hay un alien en esta columna o este alien está más abajo, actualizar
+            if (!frontLineAliens.containsKey(column) ||
+                    alien.y > frontLineAliens.get(column).y) {
+                frontLineAliens.put(column, alien);
+            }
+        }
+
+        if (frontLineAliens.isEmpty()) return;
+
+        // Seleccionar aleatoriamente 1-3 aliens para disparar
+        int shootersCount = Math.min(3, frontLineAliens.size());
+        List<GameObject> shooters = new ArrayList<>();
+
+        // Convertir valores del mapa a una lista
+        List<GameObject> frontLineList = new ArrayList<>(frontLineAliens.values());
+
+        // Seleccionar aleatoriamente shootersCount aliens de la lista
+        for (int i = 0; i < shootersCount; i++) {
+            if (frontLineList.isEmpty()) break;
+
+            int index = random.nextInt(frontLineList.size());
+            GameObject shooter = frontLineList.get(index);
+            shooters.add(shooter);
+            frontLineList.remove(index);
+        }
+
+        // Hacer que los aliens seleccionados disparen
+        for (GameObject shooter : shooters) {
+            // Crear una bala en el centro-abajo del alien
+            int bulletX = shooter.x + (shooter.width / 2) - (TILE_SIZE / 16);
+            int bulletY = shooter.y + shooter.height;
+
+            GameObject bullet = new GameObject(
+                    bulletX, bulletY,
+                    TILE_SIZE / 8, TILE_SIZE / 2,
+                    "ALIEN_BULLET", -1
+            );
+            alienBullets.add(bullet);
         }
     }
 
@@ -225,11 +314,13 @@ public class GameState {
             ships.clear();
             alienBlocks.clear();
             bullets.clear();
+            alienBullets.clear();
 
             // Reiniciar variables
             score = 0;
             gameOver = false;
             alienVelocityX = 1;
+            alienShotInterval = 500; // Reiniciar el intervalo de disparo
 
             // Crear nuevos aliens
             createAliens();
@@ -249,6 +340,7 @@ public class GameState {
             objects.addAll(ships.values());
             objects.addAll(alienBlocks);
             objects.addAll(bullets);
+            objects.addAll(alienBullets);
             return objects;
         }
     }

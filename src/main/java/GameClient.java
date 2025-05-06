@@ -42,10 +42,11 @@ public class GameClient extends JPanel implements KeyListener {
             // Mostrar instrucciones
             g.setColor(Color.white);
             g.setFont(new Font("Arial", Font.PLAIN, 12));
-            g.drawString("Flechas ← → para mover, Espacio para disparar", 10, 490);
-            g.drawString("¡Destruye cada bloque alienígena individualmente!", 10, 505);
+            g.drawString("Flechas ← → para mover, Espacio para disparar", 10, 480);
+            g.drawString("¡Destruye cada bloque alienígena individualmente!", 10, 495);
+            g.drawString("¡Cuidado! Algunos alienígenas disparan rayos rojos", 10, 510);
             if (networkHandler.isGameOver()) {
-                g.drawString("Presiona ENTER para reiniciar", 10, 520);
+                g.drawString("Presiona ENTER para reiniciar", 10, 525);
             }
         } else {
             // Renderizar mensaje de desconexión

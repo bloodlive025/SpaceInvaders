@@ -14,6 +14,8 @@ public class GameRenderer {
                 drawAlien(g2d, obj);
             } else if (obj.type.equals("BULLET") && !obj.used) {
                 drawBullet(g2d, obj);
+            } else if (obj.type.equals("ALIEN_BULLET") && !obj.used) {
+                drawAlienBullet(g2d, obj);
             }
         }
 
@@ -128,6 +130,33 @@ public class GameRenderer {
         // Añadir efecto de brillo
         g.setColor(Color.yellow);
         g.fillRect(bullet.x + bullet.width/4, bullet.y,
+                bullet.width/2, bullet.height/2);
+    }
+
+    private void drawAlienBullet(Graphics2D g, GameObject bullet) {
+        // Las balas de alien son rojas con forma diferente
+        g.setColor(Color.red);
+
+        // Dibujar un láser alienígena con forma de diamante
+        int[] xPoints = {
+                bullet.x + bullet.width/2,  // Punta superior
+                bullet.x + bullet.width,    // Derecha
+                bullet.x + bullet.width/2,  // Punta inferior
+                bullet.x                    // Izquierda
+        };
+
+        int[] yPoints = {
+                bullet.y,                   // Punta superior
+                bullet.y + bullet.height/2, // Derecha
+                bullet.y + bullet.height,   // Punta inferior
+                bullet.y + bullet.height/2  // Izquierda
+        };
+
+        g.fillPolygon(xPoints, yPoints, 4);
+
+        // Añadir efecto de brillo
+        g.setColor(new Color(255, 128, 0)); // Naranja
+        g.fillOval(bullet.x + bullet.width/4, bullet.y + bullet.height/4,
                 bullet.width/2, bullet.height/2);
     }
 }
