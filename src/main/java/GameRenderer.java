@@ -15,12 +15,18 @@ public class GameRenderer {
                 drawBoss(g2d, obj);
             } else if (obj.type.equals("NEW_ALIEN") && obj.alive) {
                 drawNewAlien(g2d, obj);
+            } else if (obj.type.equals("FINAL_BOSS") && obj.alive) {
+                drawFinalBoss(g2d, obj);
+            } else if (obj.type.equals("FINAL_ALIEN") && obj.alive) {
+                drawFinalAlien(g2d, obj);
             } else if (obj.type.equals("BULLET") && !obj.used) {
                 drawBullet(g2d, obj);
             } else if (obj.type.equals("ALIEN_BULLET") && !obj.used) {
                 drawAlienBullet(g2d, obj);
             } else if (obj.type.equals("BOSS_BULLET") && !obj.used) {
                 drawBossBullet(g2d, obj);
+            } else if (obj.type.equals("FINAL_BOSS_BULLET") && !obj.used) {
+                drawFinalBossBullet(g2d, obj);
             }
         }
 
@@ -200,6 +206,85 @@ public class GameRenderer {
                 alien.width / 8, alien.height / 8);
     }
 
+    private void drawFinalBoss(Graphics2D g, GameObject boss) {
+        g.setColor(new Color(75, 0, 130)); // Indigo
+        int[] xOctagon = {
+                boss.x + boss.width / 2,
+                boss.x + boss.width * 3 / 4,
+                boss.x + boss.width,
+                boss.x + boss.width * 3 / 4,
+                boss.x + boss.width / 2,
+                boss.x + boss.width / 4,
+                boss.x,
+                boss.x + boss.width / 4
+        };
+        int[] yOctagon = {
+                boss.y,
+                boss.y + boss.height / 4,
+                boss.y + boss.height / 2,
+                boss.y + boss.height * 3 / 4,
+                boss.y + boss.height,
+                boss.y + boss.height * 3 / 4,
+                boss.y + boss.height / 2,
+                boss.y + boss.height / 4
+        };
+        g.fillPolygon(xOctagon, yOctagon, 8);
+        g.setColor(Color.CYAN);
+        g.fillOval(boss.x + boss.width / 4, boss.y + boss.height / 4,
+                boss.width / 2, boss.height / 2);
+        g.setColor(Color.WHITE);
+        g.fillOval(boss.x + boss.width * 3 / 8, boss.y + boss.height * 3 / 8,
+                boss.width / 4, boss.height / 4);
+        g.setColor(new Color(255, 255, 255, 100));
+        int[] xLeftArm = {
+                boss.x,
+                boss.x - boss.width / 4,
+                boss.x
+        };
+        int[] yLeftArm = {
+                boss.y + boss.height / 2,
+                boss.y + boss.height / 4,
+                boss.y + boss.height * 3 / 4
+        };
+        g.fillPolygon(xLeftArm, yLeftArm, 3);
+        int[] xRightArm = {
+                boss.x + boss.width,
+                boss.x + boss.width * 5 / 4,
+                boss.x + boss.width
+        };
+        int[] yRightArm = {
+                boss.y + boss.height / 2,
+                boss.y + boss.height / 4,
+                boss.y + boss.height * 3 / 4
+        };
+        g.fillPolygon(xRightArm, yRightArm, 3);
+    }
+
+    private void drawFinalAlien(Graphics2D g, GameObject alien) {
+        if (alien.color.equals("RED")) g.setColor(Color.RED);
+        else if (alien.color.equals("PINK")) g.setColor(Color.PINK);
+        else if (alien.color.equals("WHITE")) g.setColor(Color.WHITE);
+
+        int[] xPentagon = {
+                alien.x + alien.width / 2,
+                alien.x + alien.width,
+                alien.x + alien.width * 3 / 4,
+                alien.x + alien.width / 4,
+                alien.x
+        };
+        int[] yPentagon = {
+                alien.y,
+                alien.y + alien.height / 3,
+                alien.y + alien.height,
+                alien.y + alien.height,
+                alien.y + alien.height / 3
+        };
+        g.fillPolygon(xPentagon, yPentagon, 5);
+        g.setColor(new Color(255, 0, 0, 100));
+        g.fillOval(alien.x + alien.width / 4, alien.y + alien.height / 4,
+                alien.width / 2, alien.height / 2);
+    }
+
     private void drawBullet(Graphics2D g, GameObject bullet) {
         g.setColor(Color.white);
         g.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
@@ -229,7 +314,7 @@ public class GameRenderer {
     }
 
     private void drawBossBullet(Graphics2D g, GameObject bullet) {
-        g.setColor(new Color(128, 0, 128)); // Morado oscuro
+        g.setColor(new Color(128, 0, 128));
         int[] xPoints = {
                 bullet.x + bullet.width/2,
                 bullet.x + bullet.width,
@@ -243,7 +328,27 @@ public class GameRenderer {
                 bullet.y + bullet.height/2
         };
         g.fillPolygon(xPoints, yPoints, 4);
-        g.setColor(new Color(255, 0, 255)); // Magenta brillante
+        g.setColor(new Color(255, 0, 255));
+        g.fillOval(bullet.x + bullet.width/4, bullet.y + bullet.height/4,
+                bullet.width/2, bullet.height/2);
+    }
+
+    private void drawFinalBossBullet(Graphics2D g, GameObject bullet) {
+        g.setColor(new Color(138, 43, 226)); // Purple
+        int[] xPoints = {
+                bullet.x + bullet.width/2,
+                bullet.x + bullet.width,
+                bullet.x + bullet.width/2,
+                bullet.x
+        };
+        int[] yPoints = {
+                bullet.y,
+                bullet.y + bullet.height/2,
+                bullet.y + bullet.height,
+                bullet.y + bullet.height/2
+        };
+        g.fillPolygon(xPoints, yPoints, 4);
+        g.setColor(Color.YELLOW);
         g.fillOval(bullet.x + bullet.width/4, bullet.y + bullet.height/4,
                 bullet.width/2, bullet.height/2);
     }
