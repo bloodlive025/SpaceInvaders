@@ -150,8 +150,8 @@ public class GameState {
             if (changeDirection) {
                 alienVelocityX *= -1;
                 for (GameObject alien : alienBlocks) {
-                    if (alien.alive) {
-                        alien.y += TILE_SIZE;
+                    if (alien.alive && !alien.type.equals("BOSS")) {
+                        alien.y += TILE_SIZE; // Solo los no-jefes bajan
                     }
                 }
             }
@@ -216,7 +216,7 @@ public class GameState {
                 alienBlocks.clear();
                 bullets.clear();
                 alienBullets.clear();
-                createAliens();
+                bossLevel2();
             }
 
             Iterator<Map.Entry<Integer, GameObject>> shipIter = ships.entrySet().iterator();
@@ -276,6 +276,43 @@ public class GameState {
             }
             alienCount = alienBlocks.size();
             System.out.println("Created " + alienCount + " alien blocks");
+        }
+    }
+
+    private void bossLevel2() {
+        synchronized(gameStateLock) {
+            alienBlocks.clear();
+
+            GameObject boss = new GameObject(
+                    boardWidth / 2 - TILE_SIZE * 2,
+                    TILE_SIZE,
+                    TILE_SIZE * 4,
+                    TILE_SIZE * 2,
+                    "BOSS",
+                    -1
+            );
+            boss.color = "RED";
+            alienBlocks.add(boss);
+
+            String[] colors = {"CYAN", "MAGENTA", "YELLOW", "ORANGE"};
+            for (int row = 0; row < 4; row++) {
+                for (int col = 0; col < 8; col++) {
+                    GameObject newAlien = new GameObject(
+                            TILE_SIZE * 2 + col * (TILE_SIZE * 3),
+                            TILE_SIZE * 5 + row * (TILE_SIZE * 2),
+                            TILE_SIZE * 2,
+                            TILE_SIZE * 2,
+                            "NEW_ALIEN",
+                            -1
+                    );
+                    newAlien.color = colors[row % colors.length];
+                    newAlien.blockType = row % 3;
+                    alienBlocks.add(newAlien);
+                }
+            }
+
+            alienCount = alienBlocks.size();
+            System.out.println("Created boss and " + (alienCount - 1) + " new alien blocks for level 2");
         }
     }
 
