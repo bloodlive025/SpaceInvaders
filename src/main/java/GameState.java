@@ -21,7 +21,9 @@ public class GameState {
     private boolean gameHasStarted = false;
     private Random random = new Random();
     private long lastAlienShotTime = 0;
+    private long lastBossShotTime = 0;
     private int alienShotInterval = 1500;
+    private int bossShotInterval = 1000;
     private final Object gameStateLock = new Object();
 
     public GameState() {
@@ -138,7 +140,9 @@ public class GameState {
                     for (Map.Entry<Integer, GameObject> entry : ships.entrySet()) {
                         int playerId = entry.getKey();
                         GameObject ship = entry.getValue();
-                        if (activePlayerStatus.getOrDefault(playerId, false) && alien.y + alien.height >= ship.y) {
+                        if (activePlayerStatus.getOrDefault(playerId, false) && 
+                            !alien.type.equals("BOSS") && 
+                            alien.y + alien.height >= ship.y) {
                             eliminatePlayer(playerId);
                             ship.alive = false;
                             System.out.println("Game over for player " + playerId + "! Aliens reached the ship!");
@@ -151,7 +155,7 @@ public class GameState {
                 alienVelocityX *= -1;
                 for (GameObject alien : alienBlocks) {
                     if (alien.alive && !alien.type.equals("BOSS")) {
-                        alien.y += TILE_SIZE; // Solo los no-jefes bajan
+                        alien.y += TILE_SIZE;
                     }
                 }
             }
@@ -159,11 +163,20 @@ public class GameState {
             long currentTime = System.currentTimeMillis();
             if (currentTime - lastAlienShotTime > alienShotInterval) {
                 if (random.nextInt(100) < 40) {
-                    alienShoot();
+                    alienShoot(false);
                     lastAlienShotTime = currentTime;
                     alienShotInterval = Math.max(800, 2000 - (1000 - alienCount * 3));
                 } else {
                     lastAlienShotTime = currentTime;
+                }
+            }
+
+            if (currentTime - lastBossShotTime > bossShotInterval) {
+                if (random.nextInt(100) < 20) {
+                    alienShoot(true);
+                    lastBossShotTime = currentTime;
+                } else {
+                    lastBossShotTime = currentTime;
                 }
             }
 
@@ -177,7 +190,8 @@ public class GameState {
                         alien.alive = false;
                         alienCount--;
                         int playerId = bullet.playerId;
-                        playerScores.compute(playerId, (k, v) -> v == null ? 100 : v + 100);
+                        int points = alien.type.equals("BOSS") ? 500 : 100;
+                        playerScores.compute(playerId, (k, v) -> v == null ? points : v + points);
                         System.out.println("Alien block hit by player " + playerId + "! Score: " + playerScores.get(playerId) + ", Alien blocks left: " + alienCount);
                         break;
                     }
@@ -229,31 +243,49 @@ public class GameState {
         }
     }
 
-    private void alienShoot() {
+    private void alienShoot(boolean isBossShot) {
         if (alienBlocks.isEmpty()) return;
-        Map<Integer, GameObject> frontLineAliens = new HashMap<>();
-        for (GameObject alien : alienBlocks) {
-            if (!alien.alive) continue;
-            int column = alien.x / TILE_SIZE;
-            if (!frontLineAliens.containsKey(column) || alien.y > frontLineAliens.get(column).y) {
-                frontLineAliens.put(column, alien);
+
+        if (isBossShot) {
+            for (GameObject alien : alienBlocks) {
+                if (alien.alive && alien.type.equals("BOSS")) {
+                    int bulletX = alien.x + (alien.width / 2) - (TILE_SIZE / 8);
+                    int bulletY = alien.y + alien.height;
+                    GameObject bullet = new GameObject(
+                            bulletX, bulletY,
+                            TILE_SIZE / 4, TILE_SIZE,
+                            "BOSS_BULLET", -1
+                    );
+                    alienBullets.add(bullet);
+                    break;
+                }
             }
-        }
-        if (frontLineAliens.isEmpty()) return;
-        int shootersCount = Math.min(2, frontLineAliens.size());
-        if (frontLineAliens.size() > 1 && random.nextInt(100) < 50) {
-            shootersCount = 1;
-        }
-        List<GameObject> shooters = new ArrayList<>(frontLineAliens.values());
-        for (int i = 0; i < shootersCount && !shooters.isEmpty(); i++) {
-            int index = random.nextInt(shooters.size());
-            GameObject shooter = shooters.get(index);
-            shooters.remove(index);
-            int bulletX = shooter.x + (shooter.width / 2) - (TILE_SIZE / 16);
-            int bulletY = shooter.y + shooter.height;
-            GameObject bullet = new GameObject(bulletX, bulletY,
-                    TILE_SIZE / 8, TILE_SIZE / 2, "ALIEN_BULLET", -1);
-            alienBullets.add(bullet);
+        } else {
+            Map<Integer, GameObject> frontLineAliens = new HashMap<>();
+            for (GameObject alien : alienBlocks) {
+                if (!alien.alive || alien.type.equals("BOSS")) continue;
+                int column = alien.x / TILE_SIZE;
+                if (!frontLineAliens.containsKey(column) || 
+                    alien.y > frontLineAliens.get(column).y) {
+                    frontLineAliens.put(column, alien);
+                }
+            }
+            if (frontLineAliens.isEmpty()) return;
+            int shootersCount = Math.min(2, frontLineAliens.size());
+            if (frontLineAliens.size() > 1 && random.nextInt(100) < 50) {
+                shootersCount = 1;
+            }
+            List<GameObject> shooters = new ArrayList<>(frontLineAliens.values());
+            for (int i = 0; i < shootersCount && !shooters.isEmpty(); i++) {
+                int index = random.nextInt(shooters.size());
+                GameObject shooter = shooters.get(index);
+                shooters.remove(index);
+                int bulletX = shooter.x + (shooter.width / 2) - (TILE_SIZE / 16);
+                int bulletY = shooter.y + shooter.height;
+                GameObject bullet = new GameObject(bulletX, bulletY,
+                        TILE_SIZE / 8, TILE_SIZE / 2, "ALIEN_BULLET", -1);
+                alienBullets.add(bullet);
+            }
         }
     }
 
@@ -334,11 +366,12 @@ public class GameState {
             allPlayersEliminated = false;
             alienVelocityX = 1;
             alienShotInterval = 1500;
+            bossShotInterval = 1000;
             activePlayerStatus.clear();
             playerScores.clear();
             createAliens();
             for (int id : playerIds) {
-                addPlayer(id); // This will reinitialize scores
+                addPlayer(id);
             }
             System.out.println("Game reset with " + playerIds.size() + " players");
         }
