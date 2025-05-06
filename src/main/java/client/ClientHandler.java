@@ -1,4 +1,9 @@
+package client;
 import java.net.*;
+
+import messages.Message;
+import game.GameState;
+
 import java.io.*;
 
 public class ClientHandler extends Thread {
@@ -45,11 +50,10 @@ public class ClientHandler extends Thread {
 
     private void sendInitialState() throws IOException {
         Message initialState = new Message("UPDATE_STATE");
-        initialState.objects = gameState.getGameObjects();
-        initialState.score = gameState.getScore(playerId);
-        initialState.gameOver = gameState.isGameOver();
-        initialState.playerScores.putAll(gameState.getPlayerScores());
-
+        initialState.setObjects(gameState.getGameObjects());
+        initialState.setScore(gameState.getScore(playerId));
+        initialState.setGameOver(gameState.isGameOver());
+        initialState.setPlayerScores(gameState.getPlayerScores());
         sendMessage(initialState);
         System.out.println("Initial game state sent to player: " + playerId);
     }
@@ -64,9 +68,9 @@ public class ClientHandler extends Thread {
                         Message message = (Message) obj;
                         System.out.println("Received message from player " + playerId + ": " + message);
 
-                        if (message.action.equals("PLAYER_INPUT")) {
-                            System.out.println("Player " + playerId + " input: " + message.input);
-                            gameState.handleInput(playerId, message.input);
+                        if (message.getAction().equals("PLAYER_INPUT")) {
+                            System.out.println("Player " + playerId + " input: " + message.getInput());
+                            gameState.handleInput(playerId, message.getInput());
 
                             // Send immediate update after input
                             sendMessage(createUpdateMessage());
@@ -108,10 +112,10 @@ public class ClientHandler extends Thread {
 
     private Message createUpdateMessage() {
         Message update = new Message("UPDATE_STATE");
-        update.objects = gameState.getGameObjects();
-        update.score = gameState.getScore(playerId);
-        update.gameOver = gameState.isGameOver();
-        update.playerScores.putAll(gameState.getPlayerScores());
+        update.setObjects(gameState.getGameObjects());
+        update.setScore(gameState.getScore(playerId));
+        update.setGameOver(gameState.isGameOver());
+        update.setPlayerScores(gameState.getPlayerScores());
         return update;
     }
 

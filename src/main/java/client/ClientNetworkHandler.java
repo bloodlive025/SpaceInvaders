@@ -1,4 +1,9 @@
+package client;
 import javax.swing.*;
+
+import game.GameObject;
+import messages.Message;
+
 import java.net.*;
 import java.io.*;
 import java.util.*;
@@ -46,12 +51,12 @@ public class ClientNetworkHandler extends Thread {
                     Object obj = in.readObject();
                     if (obj instanceof Message) {
                         Message message = (Message) obj;
-                        if (message.action.equals("UPDATE_STATE")) {
+                        if (message.getAction().equals("UPDATE_STATE")) {
                             synchronized (this) {
-                                gameObjects = message.objects;
-                                gameOver = message.gameOver;
+                                gameObjects = message.getObjects();
+                                gameOver = message.isGameOver();
                                 playerScores.clear();
-                                playerScores.putAll(message.playerScores);
+                                playerScores.putAll(message.getPlayerScores());
                                 score = playerScores.getOrDefault(playerId, 0);
                             }
                             updateClient();
@@ -154,8 +159,8 @@ public class ClientNetworkHandler extends Thread {
         }
         try {
             Message message = new Message("PLAYER_INPUT");
-            message.input = input;
-            message.playerId = playerId;
+            message.setInput(input);
+            message.setPlayerId(playerId);
             System.out.println("Sending input: " + input + " for player: " + playerId);
             synchronized (out) {
                 out.writeObject(message);

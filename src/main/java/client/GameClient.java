@@ -1,4 +1,9 @@
+package client;
 import javax.swing.*;
+
+import game.GameObject;
+import game.GameRenderer;
+
 import java.awt.*;
 import java.awt.event.*;
 
@@ -35,15 +40,10 @@ public class GameClient extends JPanel implements KeyListener {
         if (connectedToServer) {
             renderer.render(g, networkHandler.getGameObjects(), networkHandler.getScore(playerId), networkHandler.isGameOver());
 
-            g.setColor(Color.white);
-            g.setFont(new Font("Arial", Font.PLAIN, 12));
-            g.drawString("Flechas ← → para mover, Espacio para disparar", 10, 480);
-            g.drawString("¡Destruye cada bloque alienígena individualmente!", 10, 495);
-            g.drawString("¡Cuidado! Algunos alienígenas disparan rayos rojos", 10, 510);
 
             boolean playerShipExists = false;
             for (GameObject obj : networkHandler.getGameObjects()) {
-                if (obj.type.equals("SHIP") && obj.playerId == playerId) {
+                if (obj.getType().equals("SHIP") && obj.getPlayerId() == playerId) {
                     playerShipExists = true;
                     break;
                 }
@@ -56,8 +56,6 @@ public class GameClient extends JPanel implements KeyListener {
                 g.drawString("¡Has sido eliminado!", 150, 250);
                 g.setFont(new Font("Arial", Font.PLAIN, 16));
                 g.drawString("Observando a otros jugadores...", 150, 280);
-            } else if (networkHandler.isGameOver()) {
-                g.drawString("Presiona ENTER para reiniciar", 10, 525);
             }
         } else {
             g.setColor(Color.RED);
