@@ -13,6 +13,7 @@ public class GameState {
     private List<GameObject> alienBlocks = Collections.synchronizedList(new ArrayList<>());
     private List<GameObject> bullets = Collections.synchronizedList(new ArrayList<>());
     private List<GameObject> alienBullets = Collections.synchronizedList(new ArrayList<>());
+    private List<GameObject> walls = Collections.synchronizedList(new ArrayList<>());
     private int alienVelocityX = 1;
     private int alienCount = 0;
     private Map<Integer, Integer> playerScores = new ConcurrentHashMap<>();
@@ -233,6 +234,19 @@ public class GameState {
                         break;
                     }
                 }
+                for (GameObject wall : walls) {
+                    if (!bullet.used && wall.alive && detectCollision(bullet, wall)) {
+                        bullet.used = true;
+                        wall.health--;
+                        if (wall.health <= 0) {
+                            wall.alive = false;
+                            System.out.println("Wall at (" + wall.x + ", " + wall.y + ") destroyed by player " + bullet.playerId);
+                        } else {
+                            System.out.println("Wall at (" + wall.x + ", " + wall.y + ") hit, health: " + wall.health);
+                        }
+                        break;
+                    }
+                }
                 if (bullet.used || bullet.y < 0) {
                     bulletIter.remove();
                 }
@@ -243,6 +257,13 @@ public class GameState {
                 GameObject alienBullet = alienBulletIter.next();
                 alienBullet.x += alienBullet.velocityX;
                 alienBullet.y += alienBullet.velocityY;
+                for (GameObject wall : walls) {
+                    if (!alienBullet.used && wall.alive && detectCollision(alienBullet, wall)) {
+                        alienBullet.used = true;
+                        System.out.println("Alien bullet blocked by wall at (" + wall.x + ", " + wall.y + ")");
+                        break;
+                    }
+                }
                 for (Map.Entry<Integer, GameObject> entry : ships.entrySet()) {
                     int playerId = entry.getKey();
                     GameObject ship = entry.getValue();
@@ -364,6 +385,7 @@ public class GameState {
     private void createAliens() {
         synchronized(gameStateLock) {
             alienBlocks.clear();
+            walls.clear();
             String[] colors = {"CYAN", "MAGENTA", "YELLOW"};
             for (int row = 0; row < 10; row++) {
                 for (int col = 0; col < 16; col++) {
@@ -378,9 +400,18 @@ public class GameState {
                     alienBlocks.add(alien);
                 }
             }
+            // Create walls
+            int[] wallXPositions = {TILE_SIZE * 4, TILE_SIZE * 12, TILE_SIZE * 20, TILE_SIZE * 28};
+            for (int x : wallXPositions) {
+                GameObject wall = new GameObject(x, boardHeight - TILE_SIZE * 4,
+                        TILE_SIZE, TILE_SIZE, "WALL", -1);
+                wall.health = 3;
+                wall.alive = true;
+                walls.add(wall);
+            }
             alienCount = alienBlocks.size();
             currentLevel = 1;
-            System.out.println("Created " + alienCount + " alien blocks for Level 1");
+            System.out.println("Created " + alienCount + " alien blocks and " + walls.size() + " walls for Level 1");
         }
     }
 
@@ -467,6 +498,7 @@ public class GameState {
             alienBlocks.clear();
             bullets.clear();
             alienBullets.clear();
+            walls.clear();
             gameOver = false;
             allPlayersEliminated = false;
             alienVelocityX = 1;
@@ -496,6 +528,7 @@ public class GameState {
             objects.addAll(alienBlocks);
             objects.addAll(bullets);
             objects.addAll(alienBullets);
+            objects.addAll(walls);
             return objects;
         }
     }

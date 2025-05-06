@@ -27,6 +27,8 @@ public class GameRenderer {
                 drawBossBullet(g2d, obj);
             } else if (obj.type.equals("FINAL_BOSS_BULLET") && !obj.used) {
                 drawFinalBossBullet(g2d, obj);
+            } else if (obj.type.equals("WALL") && obj.alive) {
+                drawWall(g2d, obj);
             }
         }
 
@@ -334,7 +336,7 @@ public class GameRenderer {
     }
 
     private void drawFinalBossBullet(Graphics2D g, GameObject bullet) {
-        g.setColor(new Color(138, 43, 226)); // Purple
+        g.setColor(new Color(138, 43, 226));
         int[] xPoints = {
                 bullet.x + bullet.width/2,
                 bullet.x + bullet.width,
@@ -351,5 +353,13 @@ public class GameRenderer {
         g.setColor(Color.YELLOW);
         g.fillOval(bullet.x + bullet.width/4, bullet.y + bullet.height/4,
                 bullet.width/2, bullet.height/2);
+    }
+
+    private void drawWall(Graphics2D g, GameObject wall) {
+        float opacity = wall.health == 3 ? 1.0f : wall.health == 2 ? 0.66f : 0.33f;
+        g.setColor(new Color(0.5f, 0.5f, 0.5f, opacity)); // Gray with health-based opacity
+        g.fillRect(wall.x, wall.y, 30, 30);
+        g.setColor(Color.WHITE);
+        g.drawRect(wall.x, wall.y, wall.width, wall.height); // White border
     }
 }
