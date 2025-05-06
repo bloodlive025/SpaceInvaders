@@ -2,14 +2,14 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class GameState {
-    private static final int TILE_SIZE = 32;
-    private static final int ROWS = 16;
-    private static final int COLUMNS = 16;
+    private static final int TILE_SIZE = 16; // Reducido de 32 a 16 para hacer todo más pequeño
+    private static final int ROWS = 32;     // Incrementado de 16 a 32
+    private static final int COLUMNS = 32;  // Incrementado de 16 a 32
     private int boardWidth = TILE_SIZE * COLUMNS;
     private int boardHeight = TILE_SIZE * ROWS;
 
     private Map<Integer, GameObject> ships = new ConcurrentHashMap<>(); // Thread-safe
-    private List<GameObject> aliens = Collections.synchronizedList(new ArrayList<>());
+    private List<GameObject> alienBlocks = Collections.synchronizedList(new ArrayList<>()); // Bloques individuales de aliens
     private List<GameObject> bullets = Collections.synchronizedList(new ArrayList<>());
     private int alienVelocityX = 1;
     private int alienCount = 0;
@@ -72,10 +72,10 @@ public class GameState {
                 return;
             }
 
-            if (input.equals("LEFT") && ship.x - TILE_SIZE >= 0) {
-                ship.x -= TILE_SIZE;
-            } else if (input.equals("RIGHT") && ship.x + ship.width + TILE_SIZE <= boardWidth) {
-                ship.x += TILE_SIZE;
+            if (input.equals("LEFT") && ship.x - TILE_SIZE/2 >= 0) {
+                ship.x -= TILE_SIZE/2;
+            } else if (input.equals("RIGHT") && ship.x + ship.width + TILE_SIZE/2 <= boardWidth) {
+                ship.x += TILE_SIZE/2;
             } else if (input.equals("SHOOT")) {
                 // Crear bala en el centro del barco
                 int bulletX = ship.x + (ship.width / 2) - (TILE_SIZE / 16);
@@ -97,7 +97,9 @@ public class GameState {
 
             // Mover aliens
             boolean changeDirection = false;
-            for (GameObject alien : aliens) {
+
+            // Verificar si algún alien toca los bordes
+            for (GameObject alien : alienBlocks) {
                 if (alien.alive) {
                     alien.x += alienVelocityX;
 
@@ -121,7 +123,7 @@ public class GameState {
                 alienVelocityX *= -1;
 
                 // Mover aliens hacia abajo
-                for (GameObject alien : aliens) {
+                for (GameObject alien : alienBlocks) {
                     if (alien.alive) {
                         alien.y += TILE_SIZE;
                     }
@@ -135,13 +137,16 @@ public class GameState {
                 bullet.y -= 10; // Velocidad de la bala
 
                 // Verificar colisiones con aliens
-                for (GameObject alien : aliens) {
+                boolean bulletHit = false;
+                for (GameObject alien : alienBlocks) {
                     if (!bullet.used && alien.alive && detectCollision(bullet, alien)) {
                         bullet.used = true;
                         alien.alive = false;
                         alienCount--;
                         score += 100;
-                        System.out.println("Alien hit! Score: " + score + ", Aliens left: " + alienCount);
+                        bulletHit = true;
+                        System.out.println("Alien block hit! Score: " + score + ", Alien blocks left: " + alienCount);
+                        break;  // Una bala solo puede golpear un bloque
                     }
                 }
 
@@ -155,7 +160,7 @@ public class GameState {
             if (alienCount == 0) {
                 score += 1000; // Puntos de bonificación
                 System.out.println("Level completed! Bonus: 1000. New score: " + score);
-                aliens.clear();
+                alienBlocks.clear();
                 bullets.clear();
                 createAliens();
             }
@@ -164,28 +169,43 @@ public class GameState {
 
     private void createAliens() {
         synchronized(gameStateLock) {
-            aliens.clear();
+            alienBlocks.clear();
             String[] colors = {"CYAN", "MAGENTA", "YELLOW"};
 
-            // Crear 5 filas de 8 aliens
-            for (int row = 0; row < 5; row++) {
-                for (int col = 0; col < 8; col++) {
+            // Crear formaciones de naves alienígenas
+            // Ahora creamos más filas y columnas de aliens
+            for (int row = 0; row < 10; row++) {
+                for (int col = 0; col < 16; col++) {
+                    // Dejamos espacios para formar "flotas" de naves
+                    if ((row % 3 == 2) || (col % 4 == 3)) {
+                        continue;  // Saltar para crear espacios
+                    }
+
+                    // Para crear forma de nave triangular
+                    if (row % 3 == 0 && col % 4 != 1) {
+                        continue;  // Saltar para crear forma triangular
+                    }
+
                     GameObject alien = new GameObject(
-                            TILE_SIZE + col * (TILE_SIZE ),
+                            TILE_SIZE + col * (TILE_SIZE),
                             TILE_SIZE + row * TILE_SIZE,
                             TILE_SIZE,
                             TILE_SIZE,
                             "ALIEN",
                             -1
                     );
+
+                    // Definir forma específica
+                    alien.blockType = (row % 3) + (col % 2);  // Variedad de formas
+
                     // Asignar color según la fila
                     alien.color = colors[row % colors.length];
-                    aliens.add(alien);
+                    alienBlocks.add(alien);
                 }
             }
 
-            alienCount = aliens.size();
-            System.out.println("Created " + alienCount + " aliens");
+            alienCount = alienBlocks.size();
+            System.out.println("Created " + alienCount + " alien blocks");
         }
     }
 
@@ -203,7 +223,7 @@ public class GameState {
 
             // Limpiar todos los objetos
             ships.clear();
-            aliens.clear();
+            alienBlocks.clear();
             bullets.clear();
 
             // Reiniciar variables
@@ -227,7 +247,7 @@ public class GameState {
         synchronized(gameStateLock) {
             ArrayList<GameObject> objects = new ArrayList<>();
             objects.addAll(ships.values());
-            objects.addAll(aliens);
+            objects.addAll(alienBlocks);
             objects.addAll(bullets);
             return objects;
         }

@@ -1,13 +1,14 @@
 import java.io.Serializable;
 
 public class GameObject implements Serializable {
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 2L; // Actualizado para evitar problemas de compatibilidad
     int x, y, width, height;
     String type; // "SHIP", "ALIEN", "BULLET"
-    boolean alive; // For aliens
-    boolean used; // For bullets
-    int playerId; // To identify which player this object belongs to
-    String color; // For aliens (e.g., "CYAN", "MAGENTA", "YELLOW")
+    boolean alive; // Para los aliens
+    boolean used; // Para las balas
+    int playerId; // Para identificar a qué jugador pertenece este objeto
+    String color; // Para los aliens (e.g., "CYAN", "MAGENTA", "YELLOW")
+    int blockType = 0; // Nuevo campo para definir la forma del bloque (0-3)
 
     public GameObject(int x, int y, int width, int height, String type, int playerId) {
         this.x = x;

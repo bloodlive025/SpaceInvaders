@@ -9,6 +9,7 @@ public class GameClient extends JPanel implements KeyListener {
     private boolean connectedToServer = false;
 
     public GameClient(String ip, int port) throws Exception {
+        // Tamaño ajustado para el tablero más grande
         setPreferredSize(new Dimension(512, 512));
         setBackground(Color.black);
         setFocusable(true);
@@ -42,8 +43,9 @@ public class GameClient extends JPanel implements KeyListener {
             g.setColor(Color.white);
             g.setFont(new Font("Arial", Font.PLAIN, 12));
             g.drawString("Flechas ← → para mover, Espacio para disparar", 10, 490);
+            g.drawString("¡Destruye cada bloque alienígena individualmente!", 10, 505);
             if (networkHandler.isGameOver()) {
-                g.drawString("Presiona ENTER para reiniciar", 10, 505);
+                g.drawString("Presiona ENTER para reiniciar", 10, 520);
             }
         } else {
             // Renderizar mensaje de desconexión
@@ -101,7 +103,7 @@ public class GameClient extends JPanel implements KeyListener {
 
             int port = 12345;
 
-            JFrame frame = new JFrame("Space Invaders - Cliente");
+            JFrame frame = new JFrame("Space Invaders Mejorado - Cliente");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setResizable(false);
 
