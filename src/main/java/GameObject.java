@@ -1,10 +1,10 @@
 import java.io.Serializable;
 
 public class GameObject implements Serializable {
-    private static final long serialVersionUID = 2L; // Actualizado para evitar problemas de compatibilidad
+    private static final long serialVersionUID = 3L; // Actualizado para la nueva versión
     int x, y, width, height;
     String type; // "SHIP", "ALIEN", "BULLET"
-    boolean alive; // Para los aliens
+    boolean alive; // Para los aliens y ahora también para las naves
     boolean used; // Para las balas
     int playerId; // Para identificar a qué jugador pertenece este objeto
     String color; // Para los aliens (e.g., "CYAN", "MAGENTA", "YELLOW")

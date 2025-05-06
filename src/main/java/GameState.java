@@ -9,6 +9,9 @@ public class GameState {
     private int boardHeight = TILE_SIZE * ROWS;
 
     private Map<Integer, GameObject> ships = new ConcurrentHashMap<>(); // Thread-safe
+    // Nuevo: Mapa para rastrear si un jugador está activo o eliminado
+    private Map<Integer, Boolean> activePlayerStatus = new ConcurrentHashMap<>();
+
     private List<GameObject> alienBlocks = Collections.synchronizedList(new ArrayList<>()); // Bloques individuales de aliens
     private List<GameObject> bullets = Collections.synchronizedList(new ArrayList<>());
     private List<GameObject> alienBullets = Collections.synchronizedList(new ArrayList<>()); // Balas de los aliens
@@ -16,11 +19,12 @@ public class GameState {
     private int alienCount = 0;
     private int score = 0;
     private boolean gameOver = false;
+    // Nuevo: variable para verificar si todos los jugadores han sido eliminados
+    private boolean allPlayersEliminated = false;
+
     private Random random = new Random();
     private long lastAlienShotTime = 0;
-
-    // MODIFICADO: Se aumentó el intervalo base de disparo de 500ms a 1500ms
-    private int alienShotInterval = 1500; // Milisegundos entre disparos (aumentado para reducir frecuencia)
+    private int alienShotInterval = 1500; // Milisegundos entre disparos
 
     // Añadir sincronización
     private final Object gameStateLock = new Object();
@@ -45,6 +49,13 @@ public class GameState {
             GameObject ship = new GameObject(shipX, boardHeight - TILE_SIZE * 2,
                     TILE_SIZE * 2, TILE_SIZE, "SHIP", playerId);
             ships.put(playerId, ship);
+            // Marcar al jugador como activo
+            activePlayerStatus.put(playerId, true);
+
+            // Si era game over y se une un nuevo jugador, reiniciar el juego
+            if (allPlayersEliminated) {
+                resetGame();
+            }
 
             System.out.println("Player " + playerId + " added at position: " + shipX);
         }
@@ -53,21 +64,46 @@ public class GameState {
     public void removePlayer(int playerId) {
         synchronized(gameStateLock) {
             ships.remove(playerId);
+            activePlayerStatus.remove(playerId);
             System.out.println("Player " + playerId + " removed from game state");
 
-            // Si no quedan jugadores, reiniciar el juego
-            if (ships.isEmpty() && gameOver) {
-                resetGame();
-            }
+            // Verificar si no quedan jugadores activos
+            checkAllPlayersEliminated();
+        }
+    }
+
+    // Nuevo método para verificar si todos los jugadores han sido eliminados
+    private void checkAllPlayersEliminated() {
+        if (ships.isEmpty() || !activePlayerStatus.containsValue(true)) {
+            allPlayersEliminated = true;
+            gameOver = true;
+            System.out.println("All players have been eliminated. Game over!");
+        }
+    }
+
+    // Nuevo método para eliminar un jugador específico
+    private void eliminatePlayer(int playerId) {
+        if (activePlayerStatus.containsKey(playerId)) {
+            activePlayerStatus.put(playerId, false);
+            System.out.println("Player " + playerId + " has been eliminated!");
+
+            // Verificar si no quedan jugadores activos
+            checkAllPlayersEliminated();
         }
     }
 
     public void handleInput(int playerId, String input) {
         synchronized(gameStateLock) {
-            if (gameOver) {
+            // Verificar si el juego ha terminado o el jugador no está activo
+            if (allPlayersEliminated) {
                 if (input.equals("RESTART")) {
                     resetGame();
                 }
+                return;
+            }
+
+            // Si el jugador no está activo, ignorar sus entradas
+            if (!activePlayerStatus.getOrDefault(playerId, false)) {
                 return;
             }
 
@@ -93,12 +129,13 @@ public class GameState {
 
     public void update() {
         synchronized(gameStateLock) {
-            // Si no hay jugadores y no es game over, no actualizar
-            if (ships.isEmpty() && !gameOver) {
+            // Si no hay jugadores activos, no actualizar
+            if ((ships.isEmpty() || !activePlayerStatus.containsValue(true)) && !allPlayersEliminated) {
+                checkAllPlayersEliminated();
                 return;
             }
 
-            if (gameOver) return;
+            if (allPlayersEliminated) return;
 
             // Mover aliens
             boolean changeDirection = false;
@@ -114,10 +151,15 @@ public class GameState {
                     }
 
                     // Verificar colisión con naves
-                    for (GameObject ship : ships.values()) {
-                        if (alien.y + alien.height >= ship.y) {
-                            gameOver = true;
-                            System.out.println("Game over! Aliens reached the ships!");
+                    for (Map.Entry<Integer, GameObject> entry : ships.entrySet()) {
+                        int playerId = entry.getKey();
+                        GameObject ship = entry.getValue();
+
+                        // Solo verificar colisiones para jugadores activos
+                        if (activePlayerStatus.getOrDefault(playerId, false) && alien.y + alien.height >= ship.y) {
+                            eliminatePlayer(playerId);
+                            ship.alive = false; // Marcar la nave como no viva
+                            System.out.println("Game over for player " + playerId + "! Aliens reached the ship!");
                         }
                     }
                 }
@@ -138,12 +180,10 @@ public class GameState {
             // Lógica para que los aliens disparen
             long currentTime = System.currentTimeMillis();
             if (currentTime - lastAlienShotTime > alienShotInterval) {
-                // MODIFICADO: Añadido un elemento de aleatoriedad adicional para reducir disparos
                 if (random.nextInt(100) < 40) { // Solo 40% de probabilidad de disparar cuando se cumple el intervalo
                     alienShoot();
                     lastAlienShotTime = currentTime;
 
-                    // MODIFICADO: Reducida la velocidad de incremento de la dificultad
                     // Cuantos menos aliens haya, más rápido dispararán pero con límites más altos
                     alienShotInterval = Math.max(800, 2000 - (1000 - alienCount * 3));
                 } else {
@@ -183,11 +223,20 @@ public class GameState {
                 alienBullet.y += 7; // Velocidad de la bala hacia abajo
 
                 // Verificar colisiones con las naves de los jugadores
-                for (GameObject ship : ships.values()) {
-                    if (!alienBullet.used && detectCollision(alienBullet, ship)) {
+                for (Map.Entry<Integer, GameObject> entry : ships.entrySet()) {
+                    int playerId = entry.getKey();
+                    GameObject ship = entry.getValue();
+
+                    // Solo verificar colisiones para jugadores activos
+                    if (activePlayerStatus.getOrDefault(playerId, false) &&
+                            !alienBullet.used && detectCollision(alienBullet, ship)) {
                         alienBullet.used = true;
-                        gameOver = true;
-                        System.out.println("Player hit by alien bullet! Game over!");
+
+                        // Eliminar solo al jugador golpeado, no terminar todo el juego
+                        eliminatePlayer(playerId);
+                        ship.alive = false; // Marcar la nave como no viva
+
+                        System.out.println("Player " + playerId + " hit by alien bullet! Player eliminated!");
                         break;
                     }
                 }
@@ -206,6 +255,15 @@ public class GameState {
                 bullets.clear();
                 alienBullets.clear();
                 createAliens();
+            }
+
+            // Eliminar naves destruidas de la visualización
+            Iterator<Map.Entry<Integer, GameObject>> shipIter = ships.entrySet().iterator();
+            while (shipIter.hasNext()) {
+                Map.Entry<Integer, GameObject> entry = shipIter.next();
+                if (!entry.getValue().alive) {
+                    shipIter.remove();
+                }
             }
         }
     }
@@ -232,11 +290,10 @@ public class GameState {
 
         if (frontLineAliens.isEmpty()) return;
 
-        // MODIFICADO: Reducido el número máximo de disparadores
         // Seleccionar aleatoriamente 1-2 aliens para disparar (antes era 1-3)
         int shootersCount = Math.min(2, frontLineAliens.size());
 
-        // MODIFICADO: Añadida probabilidad aleatoria para tener aún menos disparadores
+        // Añadida probabilidad aleatoria para tener aún menos disparadores
         if (frontLineAliens.size() > 1 && random.nextInt(100) < 50) {
             shootersCount = 1; // 50% de probabilidades de que solo dispare un alienígena
         }
@@ -334,10 +391,10 @@ public class GameState {
             // Reiniciar variables
             score = 0;
             gameOver = false;
+            allPlayersEliminated = false;
             alienVelocityX = 1;
-
-            // MODIFICADO: Reiniciar con un intervalo más largo (1500ms en lugar de 500ms)
             alienShotInterval = 1500;
+            activePlayerStatus.clear();
 
             // Crear nuevos aliens
             createAliens();
@@ -354,7 +411,15 @@ public class GameState {
     public ArrayList<GameObject> getGameObjects() {
         synchronized(gameStateLock) {
             ArrayList<GameObject> objects = new ArrayList<>();
-            objects.addAll(ships.values());
+
+            // Solo incluir naves de jugadores activos
+            for (Map.Entry<Integer, GameObject> entry : ships.entrySet()) {
+                int playerId = entry.getKey();
+                if (activePlayerStatus.getOrDefault(playerId, false)) {
+                    objects.add(entry.getValue());
+                }
+            }
+
             objects.addAll(alienBlocks);
             objects.addAll(bullets);
             objects.addAll(alienBullets);
@@ -367,6 +432,6 @@ public class GameState {
     }
 
     public boolean isGameOver() {
-        return gameOver;
+        return allPlayersEliminated;
     }
 }

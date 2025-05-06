@@ -7,6 +7,7 @@ public class GameClient extends JPanel implements KeyListener {
     private GameRenderer renderer;
     private int playerId;
     private boolean connectedToServer = false;
+    private boolean playerEliminated = false; // Nueva variable para rastrear si el jugador ha sido eliminado
 
     public GameClient(String ip, int port) throws Exception {
         // Tamaño ajustado para el tablero más grande
@@ -45,7 +46,24 @@ public class GameClient extends JPanel implements KeyListener {
             g.drawString("Flechas ← → para mover, Espacio para disparar", 10, 480);
             g.drawString("¡Destruye cada bloque alienígena individualmente!", 10, 495);
             g.drawString("¡Cuidado! Algunos alienígenas disparan rayos rojos", 10, 510);
-            if (networkHandler.isGameOver()) {
+
+            // Comprobar si el jugador ha sido eliminado pero el juego continúa
+            boolean playerShipExists = false;
+            for (GameObject obj : networkHandler.getGameObjects()) {
+                if (obj.type.equals("SHIP") && obj.playerId == playerId) {
+                    playerShipExists = true;
+                    break;
+                }
+            }
+
+            if (!playerShipExists && !networkHandler.isGameOver()) {
+                playerEliminated = true;
+                g.setColor(Color.RED);
+                g.setFont(new Font("Arial", Font.BOLD, 24));
+                g.drawString("¡Has sido eliminado!", 150, 250);
+                g.setFont(new Font("Arial", Font.PLAIN, 16));
+                g.drawString("Observando a otros jugadores...", 150, 280);
+            } else if (networkHandler.isGameOver()) {
                 g.drawString("Presiona ENTER para reiniciar", 10, 525);
             }
         } else {
@@ -62,9 +80,15 @@ public class GameClient extends JPanel implements KeyListener {
     public void keyPressed(KeyEvent e) {
         if (!connectedToServer) return;
 
+        // No enviar entradas si el jugador ha sido eliminado
+        if (playerEliminated && e.getKeyCode() != KeyEvent.VK_ENTER) {
+            return;
+        }
+
         if (networkHandler.isGameOver()) {
             if (e.getKeyCode() == KeyEvent.VK_ENTER) {
                 networkHandler.sendInput("RESTART");
+                playerEliminated = false; // Reiniciar el estado del jugador
                 return;
             }
         }
