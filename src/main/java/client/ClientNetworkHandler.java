@@ -35,7 +35,7 @@ public class ClientNetworkHandler extends Thread {
             in = new ObjectInputStream(socket.getInputStream());
             playerId = in.readInt();
             connected = true;
-            System.out.println("Connected to server with playerId: " + playerId);
+            System.out.println("Conectado al servidor con ID de jugador: " + playerId);
             socket.setSoTimeout(10000);
         } catch (IOException e) {
             System.err.println("Connection error: " + e.getMessage());
@@ -68,7 +68,7 @@ public class ClientNetworkHandler extends Thread {
                     System.err.println("Error reading object: " + e.getMessage());
                     e.printStackTrace();
                 } catch (SocketTimeoutException e) {
-                    System.out.println("Socket timeout - checking connection status");
+                    System.out.println("Tiempo de espera del socket - verificando estado de la conexión");
                     if (!pingServer()) {
                         throw new IOException("Server not responding");
                     }
@@ -108,7 +108,7 @@ public class ClientNetworkHandler extends Thread {
         reconnectAttempts++;
         new Thread(() -> {
             try {
-                System.out.println("Attempting to reconnect... (Attempt " + reconnectAttempts + ")");
+                System.out.println("Intentando reconectar... (Intento " + reconnectAttempts + ")");
                 if (socket != null && !socket.isClosed()) {
                     socket.close();
                 }
@@ -120,7 +120,7 @@ public class ClientNetworkHandler extends Thread {
                 connected = true;
                 reconnecting = false;
                 socket.setSoTimeout(10000);
-                System.out.println("Reconnected successfully with playerId: " + playerId);
+                System.out.println("Reconexión exitosa con ID de jugador: " + playerId);
                 this.run();
             } catch (IOException e) {
                 System.err.println("Reconnection failed: " + e.getMessage());
@@ -154,14 +154,14 @@ public class ClientNetworkHandler extends Thread {
 
     public void sendInput(String input) {
         if (!connected) {
-            System.out.println("Not connected - cannot send input");
+            System.out.println("No conectado - no se puede enviar entrada");
             return;
         }
         try {
             Message message = new Message("PLAYER_INPUT");
             message.setInput(input);
             message.setPlayerId(playerId);
-            System.out.println("Sending input: " + input + " for player: " + playerId);
+            System.out.println("Enviando entrada: " + input + " para el jugador: " + playerId);
             synchronized (out) {
                 out.writeObject(message);
                 out.flush();
@@ -205,7 +205,7 @@ public class ClientNetworkHandler extends Thread {
     public void disconnect() {
         if (connected) {
             connected = false;
-            System.out.println("Disconnecting from server...");
+            System.out.println("Desconectando del servidor...");
             try {
                 if (socket != null && !socket.isClosed()) {
                     socket.close();

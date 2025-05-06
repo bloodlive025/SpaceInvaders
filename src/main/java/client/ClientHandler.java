@@ -40,7 +40,7 @@ public class ClientHandler extends Thread {
             // Send initial game state
             sendInitialState();
 
-            System.out.println("ClientHandler initialized for player: " + playerId);
+            System.out.println("Manejador de cliente inicializado para el jugador: " + playerId);
         } catch (IOException e) {
             System.err.println("Error initializing client handler for player " + playerId + ": " + e.getMessage());
             closeResources();
@@ -55,7 +55,7 @@ public class ClientHandler extends Thread {
         initialState.setGameOver(gameState.isGameOver());
         initialState.setPlayerScores(gameState.getPlayerScores());
         sendMessage(initialState);
-        System.out.println("Initial game state sent to player: " + playerId);
+        System.out.println("Estado inicial del juego enviado al jugador: " + playerId);
     }
 
     @Override
@@ -66,10 +66,10 @@ public class ClientHandler extends Thread {
                     Object obj = in.readObject();
                     if (obj instanceof Message) {
                         Message message = (Message) obj;
-                        System.out.println("Received message from player " + playerId + ": " + message);
+                        System.out.println("Mensaje recibido del jugador " + playerId + ": " + message);
 
                         if (message.getAction().equals("PLAYER_INPUT")) {
-                            System.out.println("Player " + playerId + " input: " + message.getInput());
+                            System.out.println("Entrada del jugador " + playerId + ": " + message.getInput());
                             gameState.handleInput(playerId, message.getInput());
 
                             // Send immediate update after input
@@ -82,7 +82,7 @@ public class ClientHandler extends Thread {
                     System.err.println("Error reading message from client " + playerId + ": " + e.getMessage());
                     e.printStackTrace();
                 } catch (SocketTimeoutException e) {
-                    System.out.println("Socket timeout for player " + playerId + " - checking connection status");
+                    System.out.println("Tiempo de espera del socket para el jugador " + playerId + " - verificando estado de la conexión");
                     if (!checkConnection()) {
                         throw new IOException("Client not responding");
                     }
@@ -141,7 +141,7 @@ public class ClientHandler extends Thread {
         running = false;
         closeResources();
         gameState.removePlayer(playerId);
-        System.out.println("Client handler for player " + playerId + " disconnected");
+        System.out.println("Manejador de cliente para el jugador " + playerId + " desconectado");
     }
 
     private void closeResources() {
@@ -162,7 +162,7 @@ public class ClientHandler extends Thread {
         try {
             if (socket != null && !socket.isClosed()) {
                 socket.close();
-                System.out.println("Client socket closed for player: " + playerId);
+                System.out.println("Socket del cliente cerrado para el jugador: " + playerId);
             }
         } catch (IOException e) {
             System.err.println("Error closing socket for player " + playerId + ": " + e.getMessage());

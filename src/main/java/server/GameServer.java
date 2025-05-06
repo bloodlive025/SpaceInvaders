@@ -20,9 +20,9 @@ public class GameServer {
         try {
             serverSocket = new ServerSocket(port);
             gameState = new GameState();
-            System.out.println("Server started on port " + port);
+            System.out.println("Servidor iniciado en el puerto " + port);
         } catch (IOException e) {
-            System.err.println("Could not start server on port " + port);
+            System.err.println("No se pudo iniciar el servidor en el puerto " + port);
             throw e;
         }
     }
@@ -31,17 +31,17 @@ public class GameServer {
         new Thread(() -> {
             while (running) {
                 try {
-                    System.out.println("Waiting for client connections...");
+                    System.out.println("Esperando conexiones de clientes...");
                     Socket clientSocket = serverSocket.accept();
-                    System.out.println("New client connected: " + clientSocket.getInetAddress());
+                    System.out.println("Nuevo cliente conectado: " + clientSocket.getInetAddress());
                     int playerId = clients.size();
                     ClientHandler clientHandler = new ClientHandler(clientSocket, gameState, playerId);
                     clients.add(clientHandler);
                     clientHandler.start();
-                    System.out.println("Client handler started. Total clients: " + clients.size());
+                    System.out.println("Manejador de cliente iniciado. Total de clientes: " + clients.size());
                 } catch (IOException e) {
                     if (running) {
-                        System.err.println("Error accepting client connection: " + e.getMessage());
+                        System.err.println("Error al aceptar la conexión del cliente: " + e.getMessage());
                         e.printStackTrace();
                     }
                 }
@@ -58,13 +58,13 @@ public class GameServer {
                         broadcastState();
                     }
                 } catch (Exception e) {
-                    System.err.println("Error in game loop: " + e.getMessage());
+                    System.err.println("Error en el bucle del juego: " + e.getMessage());
                     e.printStackTrace();
                 }
             }
         }, 0, UPDATE_INTERVAL);
 
-        System.out.println("Game loop started");
+        System.out.println("Bucle del juego iniciado");
     }
 
     private void broadcastState() {
@@ -73,21 +73,21 @@ public class GameServer {
         Message message = new Message("UPDATE_STATE");
         message.setObjects(gameState.getGameObjects());
         message.setGameOver(gameState.isGameOver());
-        message.getPlayerScores().putAll(gameState.getPlayerScores()); // Use getter method
+        message.getPlayerScores().putAll(gameState.getPlayerScores());
 
         List<ClientHandler> disconnectedClients = new ArrayList<>();
         for (ClientHandler client : clients) {
             try {
                 client.sendMessage(message);
             } catch (IOException e) {
-                System.err.println("Error sending message to client. Marking for removal.");
+                System.err.println("Error al enviar mensaje al cliente. Marcando para eliminación.");
                 disconnectedClients.add(client);
             }
         }
 
         for (ClientHandler client : disconnectedClients) {
             clients.remove(client);
-            System.out.println("Client removed. Remaining clients: " + clients.size());
+            System.out.println("Cliente eliminado. Clientes restantes: " + clients.size());
         }
     }
 
@@ -108,7 +108,7 @@ public class GameServer {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        System.out.println("Server stopped");
+        System.out.println("Servidor detenido");
     }
 
     public static void main(String[] args) {
@@ -116,13 +116,13 @@ public class GameServer {
         try {
             GameServer server = new GameServer(port);
             server.start();
-            System.out.println("Press Ctrl+C to stop the server");
+            System.out.println("Presiona Ctrl+C para detener el servidor");
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                System.out.println("Shutting down server...");
+                System.out.println("Apagando el servidor...");
                 server.stop();
             }));
         } catch (IOException e) {
-            System.err.println("Server failed to start: " + e.getMessage());
+            System.err.println("El servidor no pudo iniciarse: " + e.getMessage());
             e.printStackTrace();
         }
     }

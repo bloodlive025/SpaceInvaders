@@ -27,9 +27,9 @@ public class GameClient extends JPanel implements KeyListener {
             playerId = networkHandler.getPlayerId();
             connectedToServer = true;
             networkHandler.start();
-            System.out.println("Client initialized with playerId: " + playerId);
+            System.out.println("Clinete inicializado para palyerId: " + playerId);
         } catch (Exception e) {
-            System.err.println("Failed to initialize game client: " + e.getMessage());
+            System.err.println("Fallor la incializacion del cliente: " + e.getMessage());
             throw e;
         }
     }

@@ -83,8 +83,8 @@ public class Message implements Serializable {
 
     @Override
     public String toString() {
-        return "Message{" +
-                "action='" + action + '\'' +
+        return "Mensage{" +
+                "accion='" + action + '\'' +
                 ", playerId=" + playerId +
                 ", input='" + input + '\'' +
                 ", objects.size=" + (objects != null ? objects.size() : 0) +

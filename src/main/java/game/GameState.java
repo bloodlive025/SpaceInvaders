@@ -57,7 +57,7 @@ public class GameState {
                 gameOver = false;
             }
 
-            System.out.println("Player " + playerId + " added at position: " + shipX);
+            System.out.println("Jugador " + playerId + " añadido en la posición: " + shipX);
         }
     }
 
@@ -66,7 +66,7 @@ public class GameState {
             ships.remove(playerId);
             activePlayerStatus.remove(playerId);
             playerScores.remove(playerId);
-            System.out.println("Player " + playerId + " removed from game state");
+            System.out.println("Jugador " + playerId + " eliminado del estado del juego");
 
             checkAllPlayersEliminated();
         }
@@ -76,14 +76,14 @@ public class GameState {
         if (gameHasStarted && (ships.isEmpty() || !activePlayerStatus.containsValue(true))) {
             allPlayersEliminated = true;
             gameOver = true;
-            System.out.println("All players have been eliminated. Game over!");
+            System.out.println("¡Todos los jugadores han sido eliminados. Fin del juego!");
         }
     }
 
     private void eliminatePlayer(int playerId) {
         if (activePlayerStatus.containsKey(playerId)) {
             activePlayerStatus.put(playerId, false);
-            System.out.println("Player " + playerId + " has been eliminated!");
+            System.out.println("¡Jugador " + playerId + " ha sido eliminado!");
             checkAllPlayersEliminated();
         }
     }
@@ -98,28 +98,28 @@ public class GameState {
             }
 
             if (!activePlayerStatus.containsKey(playerId) || !activePlayerStatus.get(playerId)) {
-                System.out.println("Player " + playerId + " is not active. Input ignored.");
+                System.out.println("Jugador " + playerId + " no está activo. Entrada ignorada.");
                 return;
             }
 
             GameObject ship = ships.get(playerId);
             if (ship == null) {
-                System.out.println("Ship not found for player: " + playerId);
+                System.out.println("Nave no encontrada para el jugador: " + playerId);
                 return;
             }
 
             if (input.equals("LEFT") && ship.getX() - TILE_SIZE/2 >= 0) {
                 ship.setX(ship.getX() - TILE_SIZE/2);
-                System.out.println("Player " + playerId + " moved LEFT to: " + ship.getX());
+                System.out.println("Jugador " + playerId + " se movió a la IZQUIERDA a: " + ship.getX());
             } else if (input.equals("RIGHT") && ship.getX() + ship.getWidth() + TILE_SIZE/2 <= boardWidth) {
                 ship.setX(ship.getX() + TILE_SIZE/2);
-                System.out.println("Player " + playerId + " moved RIGHT to: " + ship.getX());
+                System.out.println("Jugador " + playerId + " se movió a la DERECHA a: " + ship.getX());
             } else if (input.equals("SHOOT")) {
                 int bulletX = ship.getX() + (ship.getWidth() / 2) - (TILE_SIZE / 16);
                 GameObject bullet = new GameObject(bulletX, ship.getY(),
                         TILE_SIZE / 8, TILE_SIZE / 2, "BULLET", playerId);
                 bullets.add(bullet);
-                System.out.println("Player " + playerId + " SHOOT from position: " + ship.getX());
+                System.out.println("Jugador " + playerId + " DISPARÓ desde la posición: " + ship.getX());
             }
         }
     }
@@ -156,7 +156,7 @@ public class GameState {
                             alien.getY() + alien.getHeight() >= ship.getY()) {
                             eliminatePlayer(playerId);
                             ship.setAlive(false);
-                            System.out.println("Game over for player " + playerId + "! Aliens reached the ship!");
+                            System.out.println("¡Fin del juego para el jugador " + playerId + "! Los alienígenas alcanzaron la nave!");
                         }
                     }
                 }
@@ -177,7 +177,7 @@ public class GameState {
                     if (alien.isAlive() && alien.getType().equals("FINAL_BOSS")) {
                         alien.setX(random.nextInt(boardWidth - alien.getWidth() + 1));
                         lastTeleportTime = currentTime;
-                        System.out.println("Final boss teleported to x: " + alien.getX());
+                        System.out.println("Jefe final teletransportado a x: " + alien.getX());
                         break;
                     }
                 }
@@ -231,7 +231,7 @@ public class GameState {
                         int playerId = bullet.getPlayerId();
                         int points = alien.getType().equals("FINAL_BOSS") ? 1000 : 100;
                         playerScores.compute(playerId, (k, v) -> v == null ? points : v + points);
-                        System.out.println("Alien block hit by player " + playerId + "! Score: " + playerScores.get(playerId) + ", Alien blocks left: " + alienCount);
+                        System.out.println("Bloque alienígena alcanzado por el jugador " + playerId + "! Puntuación: " + playerScores.get(playerId) + ", Bloques alienígenas restantes: " + alienCount);
                         break;
                     }
                 }
@@ -241,9 +241,9 @@ public class GameState {
                         wall.setHealth(wall.getHealth() - 1);
                         if (wall.getHealth() <= 0) {
                             wall.setAlive(false);
-                            System.out.println("Wall at (" + wall.getX() + ", " + wall.getY() + ") destroyed by player " + bullet.getPlayerId());
+                            System.out.println("Muro en (" + wall.getX() + ", " + wall.getY() + ") destruido por el jugador " + bullet.getPlayerId());
                         } else {
-                            System.out.println("Wall at (" + wall.getX() + ", " + wall.getY() + ") hit, health: " + wall.getHealth());
+                            System.out.println("Muro en (" + wall.getX() + ", " + wall.getY() + ") alcanzado, salud: " + wall.getHealth());
                         }
                         break;
                     }
@@ -261,7 +261,7 @@ public class GameState {
                 for (GameObject wall : walls) {
                     if (!alienBullet.isUsed() && wall.isAlive() && detectCollision(alienBullet, wall)) {
                         alienBullet.setUsed(true);
-                        System.out.println("Alien bullet blocked by wall at (" + wall.getX() + ", " + wall.getY() + ")");
+                        System.out.println("Bala alienígena bloqueada por el muro en (" + wall.getX() + ", " + wall.getY() + ")");
                         break;
                     }
                 }
@@ -273,7 +273,7 @@ public class GameState {
                         alienBullet.setUsed(true);
                         eliminatePlayer(playerId);
                         ship.setAlive(false);
-                        System.out.println("Player " + playerId + " hit by alien bullet! Player eliminated!");
+                        System.out.println("¡Jugador " + playerId + " alcanzado por bala alienígena! Jugador eliminado!");
                         break;
                     }
                 }
@@ -286,7 +286,7 @@ public class GameState {
                 for (Integer playerId : playerScores.keySet()) {
                     playerScores.compute(playerId, (k, v) -> v == null ? 1000 : v + 1000);
                 }
-                System.out.println("Level " + currentLevel + " completed! Bonus: 1000 added to all players.");
+                System.out.println("Nivel " + currentLevel + " completado! Bonificación: 1000 añadido a todos los jugadores.");
                 alienBlocks.clear();
                 bullets.clear();
                 alienBullets.clear();
@@ -301,7 +301,7 @@ public class GameState {
                     for (Integer playerId : playerScores.keySet()) {
                         playerScores.compute(playerId, (k, v) -> v == null ? 2000 : v + 2000);
                     }
-                    System.out.println("Game completed! Bonus: 2000 added to all players.");
+                    System.out.println("¡Juego completado! Bonificación: 2000 añadido a todos los jugadores.");
                 }
             }
 
@@ -412,7 +412,7 @@ public class GameState {
             }
             alienCount = alienBlocks.size();
             currentLevel = 1;
-            System.out.println("Created " + alienCount + " alien blocks and " + walls.size() + " walls for Level 1");
+            System.out.println("Creados " + alienCount + " bloques alienígenas y " + walls.size() + " muros para el Nivel 1");
         }
     }
 
@@ -446,7 +446,7 @@ public class GameState {
                 }
             }
             alienCount = alienBlocks.size();
-            System.out.println("Created boss and " + (alienCount - 1) + " new alien blocks for Level 2");
+            System.out.println("Creado jefe y " + (alienCount - 1) + " nuevos bloques alienígenas para el Nivel 2");
         }
     }
 
@@ -481,7 +481,7 @@ public class GameState {
                 }
             }
             alienCount = alienBlocks.size();
-            System.out.println("Created final boss and " + (alienCount - 1) + " final alien blocks for Level 3");
+            System.out.println("Creado jefe final y " + (alienCount - 1) + " bloques alienígenas finales para el Nivel 3");
         }
     }
 
@@ -513,7 +513,7 @@ public class GameState {
             for (int id : playerIds) {
                 addPlayer(id);
             }
-            System.out.println("Game reset with " + playerIds.size() + " players");
+            System.out.println("Juego reiniciado con " + playerIds.size() + " jugadores");
         }
     }
 
