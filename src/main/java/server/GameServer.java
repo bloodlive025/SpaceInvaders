@@ -1,7 +1,12 @@
+package server;
 import java.net.*;
 import java.util.*;
 import java.io.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import client.ClientHandler;
+import game.GameState;
+import messages.Message;
 
 public class GameServer {
     private ServerSocket serverSocket;
@@ -66,9 +71,9 @@ public class GameServer {
         if (clients.isEmpty()) return;
 
         Message message = new Message("UPDATE_STATE");
-        message.objects = gameState.getGameObjects();
-        message.gameOver = gameState.isGameOver();
-        message.playerScores.putAll(gameState.getPlayerScores()); // Use getter method
+        message.setObjects(gameState.getGameObjects());
+        message.setGameOver(gameState.isGameOver());
+        message.getPlayerScores().putAll(gameState.getPlayerScores()); // Use getter method
 
         List<ClientHandler> disconnectedClients = new ArrayList<>();
         for (ClientHandler client : clients) {

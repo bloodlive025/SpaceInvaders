@@ -1,4 +1,9 @@
+package client;
 import javax.swing.*;
+
+import game.GameObject;
+import game.GameRenderer;
+
 import java.awt.*;
 import java.awt.event.*;
 
@@ -38,7 +43,7 @@ public class GameClient extends JPanel implements KeyListener {
 
             boolean playerShipExists = false;
             for (GameObject obj : networkHandler.getGameObjects()) {
-                if (obj.type.equals("SHIP") && obj.playerId == playerId) {
+                if (obj.getType().equals("SHIP") && obj.getPlayerId() == playerId) {
                     playerShipExists = true;
                     break;
                 }

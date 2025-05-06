@@ -1,3 +1,4 @@
+package game;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -107,18 +108,18 @@ public class GameState {
                 return;
             }
 
-            if (input.equals("LEFT") && ship.x - TILE_SIZE/2 >= 0) {
-                ship.x -= TILE_SIZE/2;
-                System.out.println("Player " + playerId + " moved LEFT to: " + ship.x);
-            } else if (input.equals("RIGHT") && ship.x + ship.width + TILE_SIZE/2 <= boardWidth) {
-                ship.x += TILE_SIZE/2;
-                System.out.println("Player " + playerId + " moved RIGHT to: " + ship.x);
+            if (input.equals("LEFT") && ship.getX() - TILE_SIZE/2 >= 0) {
+                ship.setX(ship.getX() - TILE_SIZE/2);
+                System.out.println("Player " + playerId + " moved LEFT to: " + ship.getX());
+            } else if (input.equals("RIGHT") && ship.getX() + ship.getWidth() + TILE_SIZE/2 <= boardWidth) {
+                ship.setX(ship.getX() + TILE_SIZE/2);
+                System.out.println("Player " + playerId + " moved RIGHT to: " + ship.getX());
             } else if (input.equals("SHOOT")) {
-                int bulletX = ship.x + (ship.width / 2) - (TILE_SIZE / 16);
-                GameObject bullet = new GameObject(bulletX, ship.y,
+                int bulletX = ship.getX() + (ship.getWidth() / 2) - (TILE_SIZE / 16);
+                GameObject bullet = new GameObject(bulletX, ship.getY(),
                         TILE_SIZE / 8, TILE_SIZE / 2, "BULLET", playerId);
                 bullets.add(bullet);
-                System.out.println("Player " + playerId + " SHOOT from position: " + ship.x);
+                System.out.println("Player " + playerId + " SHOOT from position: " + ship.getX());
             }
         }
     }
@@ -138,23 +139,23 @@ public class GameState {
 
             boolean changeDirection = false;
             for (GameObject alien : alienBlocks) {
-                if (alien.alive) {
-                    if (alien.type.equals("FINAL_BOSS")) {
-                        alien.x += alienVelocityX * 1.5;
+                if (alien.isAlive()) {
+                    if (alien.getType().equals("FINAL_BOSS")) {
+                        alien.setX((int)(alien.getX() + alienVelocityX * 1.5));
                     } else {
-                        alien.x += alienVelocityX;
+                        alien.setX(alien.getX() + alienVelocityX);
                     }
-                    if (alien.x + alien.width >= boardWidth || alien.x <= 0) {
+                    if (alien.getX() + alien.getWidth() >= boardWidth || alien.getX() <= 0) {
                         changeDirection = true;
                     }
                     for (Map.Entry<Integer, GameObject> entry : ships.entrySet()) {
                         int playerId = entry.getKey();
                         GameObject ship = entry.getValue();
                         if (activePlayerStatus.getOrDefault(playerId, false) &&
-                            !alien.type.equals("BOSS") && !alien.type.equals("FINAL_BOSS") &&
-                            alien.y + alien.height >= ship.y) {
+                            !alien.getType().equals("BOSS") && !alien.getType().equals("FINAL_BOSS") &&
+                            alien.getY() + alien.getHeight() >= ship.getY()) {
                             eliminatePlayer(playerId);
-                            ship.alive = false;
+                            ship.setAlive(false);
                             System.out.println("Game over for player " + playerId + "! Aliens reached the ship!");
                         }
                     }
@@ -164,8 +165,8 @@ public class GameState {
             if (changeDirection) {
                 alienVelocityX *= -1;
                 for (GameObject alien : alienBlocks) {
-                    if (alien.alive && !alien.type.equals("BOSS") && !alien.type.equals("FINAL_BOSS")) {
-                        alien.y += alien.type.equals("FINAL_ALIEN") ? TILE_SIZE / 2 : TILE_SIZE;
+                    if (alien.isAlive() && !alien.getType().equals("BOSS") && !alien.getType().equals("FINAL_BOSS")) {
+                        alien.setY(alien.getY() + (alien.getType().equals("FINAL_ALIEN") ? TILE_SIZE / 2 : TILE_SIZE));
                     }
                 }
             }
@@ -173,10 +174,10 @@ public class GameState {
             long currentTime = System.currentTimeMillis();
             if (currentLevel == 3 && currentTime - lastTeleportTime > teleportInterval) {
                 for (GameObject alien : alienBlocks) {
-                    if (alien.alive && alien.type.equals("FINAL_BOSS")) {
-                        alien.x = random.nextInt(boardWidth - alien.width + 1);
+                    if (alien.isAlive() && alien.getType().equals("FINAL_BOSS")) {
+                        alien.setX(random.nextInt(boardWidth - alien.getWidth() + 1));
                         lastTeleportTime = currentTime;
-                        System.out.println("Final boss teleported to x: " + alien.x);
+                        System.out.println("Final boss teleported to x: " + alien.getX());
                         break;
                     }
                 }
@@ -213,41 +214,41 @@ public class GameState {
             Iterator<GameObject> bulletIter = bullets.iterator();
             while (bulletIter.hasNext()) {
                 GameObject bullet = bulletIter.next();
-                bullet.y -= 10;
+                bullet.setY(bullet.getY() - 10);
                 for (GameObject alien : alienBlocks) {
-                    if (!bullet.used && alien.alive && detectCollision(bullet, alien)) {
-                        bullet.used = true;
-                        if (alien.type.equals("FINAL_BOSS")) {
-                            alien.health--;
-                            if (alien.health <= 0) {
-                                alien.alive = false;
+                    if (!bullet.isUsed() && alien.isAlive() && detectCollision(bullet, alien)) {
+                        bullet.setUsed(true);
+                        if (alien.getType().equals("FINAL_BOSS")) {
+                            alien.setHealth(alien.getHealth() - 1);
+                            if (alien.getHealth() <= 0) {
+                                alien.setAlive(false);
                                 alienCount--;
                             }
                         } else {
-                            alien.alive = false;
+                            alien.setAlive(false);
                             alienCount--;
                         }
-                        int playerId = bullet.playerId;
-                        int points = alien.type.equals("FINAL_BOSS") ? 1000 : 100;
+                        int playerId = bullet.getPlayerId();
+                        int points = alien.getType().equals("FINAL_BOSS") ? 1000 : 100;
                         playerScores.compute(playerId, (k, v) -> v == null ? points : v + points);
                         System.out.println("Alien block hit by player " + playerId + "! Score: " + playerScores.get(playerId) + ", Alien blocks left: " + alienCount);
                         break;
                     }
                 }
                 for (GameObject wall : walls) {
-                    if (!bullet.used && wall.alive && detectCollision(bullet, wall)) {
-                        bullet.used = true;
-                        wall.health--;
-                        if (wall.health <= 0) {
-                            wall.alive = false;
-                            System.out.println("Wall at (" + wall.x + ", " + wall.y + ") destroyed by player " + bullet.playerId);
+                    if (!bullet.isUsed() && wall.isAlive() && detectCollision(bullet, wall)) {
+                        bullet.setUsed(true);
+                        wall.setHealth(wall.getHealth() - 1);
+                        if (wall.getHealth() <= 0) {
+                            wall.setAlive(false);
+                            System.out.println("Wall at (" + wall.getX() + ", " + wall.getY() + ") destroyed by player " + bullet.getPlayerId());
                         } else {
-                            System.out.println("Wall at (" + wall.x + ", " + wall.y + ") hit, health: " + wall.health);
+                            System.out.println("Wall at (" + wall.getX() + ", " + wall.getY() + ") hit, health: " + wall.getHealth());
                         }
                         break;
                     }
                 }
-                if (bullet.used || bullet.y < 0) {
+                if (bullet.isUsed() || bullet.getY() < 0) {
                     bulletIter.remove();
                 }
             }
@@ -255,12 +256,12 @@ public class GameState {
             Iterator<GameObject> alienBulletIter = alienBullets.iterator();
             while (alienBulletIter.hasNext()) {
                 GameObject alienBullet = alienBulletIter.next();
-                alienBullet.x += alienBullet.velocityX;
-                alienBullet.y += alienBullet.velocityY;
+                alienBullet.setX((int)(alienBullet.getX() + alienBullet.getVelocityX()));
+                alienBullet.setY((int)(alienBullet.getY() + alienBullet.getVelocityY()));
                 for (GameObject wall : walls) {
-                    if (!alienBullet.used && wall.alive && detectCollision(alienBullet, wall)) {
-                        alienBullet.used = true;
-                        System.out.println("Alien bullet blocked by wall at (" + wall.x + ", " + wall.y + ")");
+                    if (!alienBullet.isUsed() && wall.isAlive() && detectCollision(alienBullet, wall)) {
+                        alienBullet.setUsed(true);
+                        System.out.println("Alien bullet blocked by wall at (" + wall.getX() + ", " + wall.getY() + ")");
                         break;
                     }
                 }
@@ -268,15 +269,15 @@ public class GameState {
                     int playerId = entry.getKey();
                     GameObject ship = entry.getValue();
                     if (activePlayerStatus.getOrDefault(playerId, false) &&
-                            !alienBullet.used && detectCollision(alienBullet, ship)) {
-                        alienBullet.used = true;
+                            !alienBullet.isUsed() && detectCollision(alienBullet, ship)) {
+                        alienBullet.setUsed(true);
                         eliminatePlayer(playerId);
-                        ship.alive = false;
+                        ship.setAlive(false);
                         System.out.println("Player " + playerId + " hit by alien bullet! Player eliminated!");
                         break;
                     }
                 }
-                if (alienBullet.used || alienBullet.y > boardHeight || alienBullet.x < 0 || alienBullet.x > boardWidth) {
+                if (alienBullet.isUsed() || alienBullet.getY() > boardHeight || alienBullet.getX() < 0 || alienBullet.getX() > boardWidth) {
                     alienBulletIter.remove();
                 }
             }
@@ -307,7 +308,7 @@ public class GameState {
             Iterator<Map.Entry<Integer, GameObject>> shipIter = ships.entrySet().iterator();
             while (shipIter.hasNext()) {
                 Map.Entry<Integer, GameObject> entry = shipIter.next();
-                if (!entry.getValue().alive) {
+                if (!entry.getValue().isAlive()) {
                     shipIter.remove();
                 }
             }
@@ -319,33 +320,33 @@ public class GameState {
 
         if (isBossShot) {
             for (GameObject alien : alienBlocks) {
-                if (alien.alive && (alien.type.equals("BOSS") || alien.type.equals("FINAL_BOSS"))) {
-                    int bulletX = alien.x + (alien.width / 2);
-                    int bulletY = alien.y + alien.height;
-                    String bulletType = alien.type.equals("FINAL_BOSS") ? "FINAL_BOSS_BULLET" : "BOSS_BULLET";
-                    int bulletWidth = alien.type.equals("FINAL_BOSS") ? TILE_SIZE * 3 / 8 : TILE_SIZE / 4;
-                    int bulletHeight = alien.type.equals("FINAL_BOSS") ? TILE_SIZE * 3 / 4 : TILE_SIZE;
-                    if (alien.type.equals("FINAL_BOSS")) {
+                if (alien.isAlive() && (alien.getType().equals("BOSS") || alien.getType().equals("FINAL_BOSS"))) {
+                    int bulletX = alien.getX() + (alien.getWidth() / 2);
+                    int bulletY = alien.getY() + alien.getHeight();
+                    String bulletType = alien.getType().equals("FINAL_BOSS") ? "FINAL_BOSS_BULLET" : "BOSS_BULLET";
+                    int bulletWidth = alien.getType().equals("FINAL_BOSS") ? TILE_SIZE * 3 / 8 : TILE_SIZE / 4;
+                    int bulletHeight = alien.getType().equals("FINAL_BOSS") ? TILE_SIZE * 3 / 4 : TILE_SIZE;
+                    if (alien.getType().equals("FINAL_BOSS")) {
                         GameObject bullet1 = new GameObject(bulletX - bulletWidth / 2, bulletY,
                                 bulletWidth, bulletHeight, bulletType, -1);
-                        bullet1.velocityX = 0;
-                        bullet1.velocityY = 7;
+                        bullet1.setVelocityX(0);
+                        bullet1.setVelocityY(7);
                         GameObject bullet2 = new GameObject(bulletX - bulletWidth / 2, bulletY,
                                 bulletWidth, bulletHeight, bulletType, -1);
-                        bullet2.velocityX = -3.5;
-                        bullet2.velocityY = 6;
+                        bullet2.setVelocityX(-3.5);
+                        bullet2.setVelocityY(6);
                         GameObject bullet3 = new GameObject(bulletX - bulletWidth / 2, bulletY,
                                 bulletWidth, bulletHeight, bulletType, -1);
-                        bullet3.velocityX = 3.5;
-                        bullet3.velocityY = 6;
+                        bullet3.setVelocityX(3.5);
+                        bullet3.setVelocityY(6);
                         alienBullets.add(bullet1);
                         alienBullets.add(bullet2);
                         alienBullets.add(bullet3);
                     } else {
                         GameObject bullet = new GameObject(bulletX - bulletWidth / 2, bulletY,
                                 bulletWidth, bulletHeight, bulletType, -1);
-                        bullet.velocityX = 0;
-                        bullet.velocityY = 7;
+                        bullet.setVelocityX(0);
+                        bullet.setVelocityY(7);
                         alienBullets.add(bullet);
                     }
                     break;
@@ -354,10 +355,10 @@ public class GameState {
         } else {
             Map<Integer, GameObject> frontLineAliens = new HashMap<>();
             for (GameObject alien : alienBlocks) {
-                if (!alien.alive || alien.type.equals("BOSS") || alien.type.equals("FINAL_BOSS")) continue;
-                int column = alien.x / TILE_SIZE;
+                if (!alien.isAlive() || alien.getType().equals("BOSS") || alien.getType().equals("FINAL_BOSS")) continue;
+                int column = alien.getX() / TILE_SIZE;
                 if (!frontLineAliens.containsKey(column) ||
-                        alien.y > frontLineAliens.get(column).y) {
+                        alien.getY() > frontLineAliens.get(column).getY()) {
                     frontLineAliens.put(column, alien);
                 }
             }
@@ -371,12 +372,12 @@ public class GameState {
                 int index = random.nextInt(shooters.size());
                 GameObject shooter = shooters.get(index);
                 shooters.remove(index);
-                int bulletX = shooter.x + (shooter.width / 2) - (TILE_SIZE / 16);
-                int bulletY = shooter.y + shooter.height;
+                int bulletX = shooter.getX() + (shooter.getWidth() / 2) - (TILE_SIZE / 16);
+                int bulletY = shooter.getY() + shooter.getHeight();
                 GameObject bullet = new GameObject(bulletX, bulletY,
                         TILE_SIZE / 8, TILE_SIZE / 2, "ALIEN_BULLET", -1);
-                bullet.velocityX = 0;
-                bullet.velocityY = 7;
+                bullet.setVelocityX(0);
+                bullet.setVelocityY(7);
                 alienBullets.add(bullet);
             }
         }
@@ -395,8 +396,8 @@ public class GameState {
                             TILE_SIZE + col * TILE_SIZE,
                             TILE_SIZE + row * TILE_SIZE,
                             TILE_SIZE, TILE_SIZE, "ALIEN", -1);
-                    alien.blockType = (row % 3) + (col % 2);
-                    alien.color = colors[row % colors.length];
+                    alien.setBlockType((row % 3) + (col % 2));
+                    alien.setColor(colors[row % colors.length]);
                     alienBlocks.add(alien);
                 }
             }
@@ -405,8 +406,8 @@ public class GameState {
             for (int x : wallXPositions) {
                 GameObject wall = new GameObject(x, boardHeight - TILE_SIZE * 4,
                         TILE_SIZE, TILE_SIZE, "WALL", -1);
-                wall.health = 3;
-                wall.alive = true;
+                wall.setHealth(3);
+                wall.setAlive(true);
                 walls.add(wall);
             }
             alienCount = alienBlocks.size();
@@ -426,7 +427,7 @@ public class GameState {
                     "BOSS",
                     -1
             );
-            boss.color = "RED";
+            boss.setColor("RED");
             alienBlocks.add(boss);
             String[] colors = {"CYAN", "MAGENTA", "YELLOW", "ORANGE"};
             for (int row = 0; row < 4; row++) {
@@ -439,8 +440,8 @@ public class GameState {
                             "NEW_ALIEN",
                             -1
                     );
-                    newAlien.color = colors[row % colors.length];
-                    newAlien.blockType = row % 3;
+                    newAlien.setColor(colors[row % colors.length]);
+                    newAlien.setBlockType(row % 3);
                     alienBlocks.add(newAlien);
                 }
             }
@@ -460,8 +461,8 @@ public class GameState {
                     "FINAL_BOSS",
                     -1
             );
-            finalBoss.color = "PURPLE";
-            finalBoss.health = 5;
+            finalBoss.setColor("PURPLE");
+            finalBoss.setHealth(5);
             alienBlocks.add(finalBoss);
             String[] colors = {"RED", "PINK", "WHITE"};
             for (int row = 0; row < 3; row++) {
@@ -474,8 +475,8 @@ public class GameState {
                             "FINAL_ALIEN",
                             -1
                     );
-                    finalAlien.color = colors[row % colors.length];
-                    finalAlien.blockType = row % 3;
+                    finalAlien.setColor(colors[row % colors.length]);
+                    finalAlien.setBlockType(row % 3);
                     alienBlocks.add(finalAlien);
                 }
             }
@@ -485,10 +486,10 @@ public class GameState {
     }
 
     private boolean detectCollision(GameObject a, GameObject b) {
-        return a.x < b.x + b.width &&
-                a.x + a.width > b.x &&
-                a.y < b.y + b.height &&
-                a.y + a.height > b.y;
+        return a.getX() < b.getX() + b.getWidth() &&
+               a.getX() + a.getWidth() > b.getX() &&
+               a.getY() < b.getY() + b.getHeight() &&
+               a.getY() + a.getHeight() > b.getY();
     }
 
     private void resetGame() {
