@@ -3,7 +3,6 @@ import java.util.*;
 
 public class GameRenderer {
     public void render(Graphics g, ArrayList<GameObject> objects, int score, boolean gameOver) {
-        // Usar Graphics2D para mejor calidad gráfica
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
@@ -12,10 +11,16 @@ public class GameRenderer {
                 drawShip(g2d, obj);
             } else if (obj.type.equals("ALIEN") && obj.alive) {
                 drawAlien(g2d, obj);
+            } else if (obj.type.equals("BOSS") && obj.alive) {
+                drawBoss(g2d, obj);
+            } else if (obj.type.equals("NEW_ALIEN") && obj.alive) {
+                drawNewAlien(g2d, obj);
             } else if (obj.type.equals("BULLET") && !obj.used) {
                 drawBullet(g2d, obj);
             } else if (obj.type.equals("ALIEN_BULLET") && !obj.used) {
                 drawAlienBullet(g2d, obj);
+            } else if (obj.type.equals("BOSS_BULLET") && !obj.used) {
+                drawBossBullet(g2d, obj);
             }
         }
 
@@ -30,132 +35,215 @@ public class GameRenderer {
 
     private void drawShip(Graphics2D g, GameObject ship) {
         g.setColor(Color.green);
-
-        // Dibujar un triángulo para la nave del jugador
         int[] xPoints = {
-                ship.x + ship.width/2,           // Punta
-                ship.x,                           // Esquina izquierda
-                ship.x + ship.width               // Esquina derecha
+                ship.x + ship.width/2,
+                ship.x,
+                ship.x + ship.width
         };
-
         int[] yPoints = {
-                ship.y,                           // Punta (arriba)
-                ship.y + ship.height,             // Base izquierda
-                ship.y + ship.height              // Base derecha
+                ship.y,
+                ship.y + ship.height,
+                ship.y + ship.height
         };
-
         g.fillPolygon(xPoints, yPoints, 3);
-
-        // Añadir detalles a la nave
         g.setColor(Color.DARK_GRAY);
         g.fillRect(ship.x + ship.width/4, ship.y + ship.height/2,
                 ship.width/2, ship.height/2);
     }
 
     private void drawAlien(Graphics2D g, GameObject alien) {
-        // Establecer color según el tipo de alien
         if (alien.color.equals("CYAN")) g.setColor(Color.cyan);
         else if (alien.color.equals("MAGENTA")) g.setColor(Color.magenta);
         else if (alien.color.equals("YELLOW")) g.setColor(Color.yellow);
 
-        // Variedad de formas según blockType
         switch (alien.blockType) {
-            case 0: // Forma triangular - nave pequeña
+            case 0:
                 int[] xPoints = {
-                        alien.x + alien.width/2,         // Punta
-                        alien.x,                         // Esquina izquierda
-                        alien.x + alien.width            // Esquina derecha
+                        alien.x + alien.width/2,
+                        alien.x,
+                        alien.x + alien.width
                 };
-
                 int[] yPoints = {
-                        alien.y + alien.height,          // Punta (abajo)
-                        alien.y,                         // Base izquierda
-                        alien.y                          // Base derecha
+                        alien.y + alien.height,
+                        alien.y,
+                        alien.y
                 };
-
                 g.fillPolygon(xPoints, yPoints, 3);
                 break;
-
-            case 1: // Forma ovalada - nave mediana
+            case 1:
                 g.fillOval(alien.x, alien.y, alien.width, alien.height);
                 break;
-
-            case 2: // Forma de rombo - nave grande
+            case 2:
                 int[] xRombo = {
-                        alien.x + alien.width/2,         // Punta superior
-                        alien.x + alien.width,           // Derecha
-                        alien.x + alien.width/2,         // Punta inferior
-                        alien.x                          // Izquierda
+                        alien.x + alien.width/2,
+                        alien.x + alien.width,
+                        alien.x + alien.width/2,
+                        alien.x
                 };
-
                 int[] yRombo = {
-                        alien.y,                         // Punta superior
-                        alien.y + alien.height/2,        // Derecha
-                        alien.y + alien.height,          // Punta inferior
-                        alien.y + alien.height/2         // Izquierda
+                        alien.y,
+                        alien.y + alien.height/2,
+                        alien.y + alien.height,
+                        alien.y + alien.height/2
                 };
-
                 g.fillPolygon(xRombo, yRombo, 4);
                 break;
-
-            default: // Forma rectangular para otros tipos
+            default:
                 g.fillRect(alien.x, alien.y, alien.width, alien.height);
                 break;
         }
 
-        // Añadir detalles a los aliens
         g.setColor(Color.BLACK);
         switch (alien.blockType) {
             case 0:
             case 2:
-                // Ojos para formas triangulares y rombos
                 g.fillOval(alien.x + alien.width/4, alien.y + alien.height/4,
                         alien.width/6, alien.height/6);
                 g.fillOval(alien.x + alien.width*5/8, alien.y + alien.height/4,
                         alien.width/6, alien.height/6);
                 break;
             case 1:
-                // Línea central para óvalos
                 g.drawLine(alien.x, alien.y + alien.height/2,
                         alien.x + alien.width, alien.y + alien.height/2);
                 break;
         }
     }
 
+    private void drawBoss(Graphics2D g, GameObject boss) {
+        g.setColor(new Color(128, 0, 128));
+        int[] xHexagon = {
+                boss.x + boss.width / 2,
+                boss.x + boss.width * 3 / 4,
+                boss.x + boss.width * 3 / 4,
+                boss.x + boss.width / 2,
+                boss.x + boss.width / 4,
+                boss.x + boss.width / 4
+        };
+        int[] yHexagon = {
+                boss.y,
+                boss.y + boss.height / 4,
+                boss.y + boss.height * 3 / 4,
+                boss.y + boss.height,
+                boss.y + boss.height * 3 / 4,
+                boss.y + boss.height / 4
+        };
+        g.fillPolygon(xHexagon, yHexagon, 6);
+        g.setColor(new Color(255, 0, 255));
+        g.fillOval(boss.x + boss.width / 4, boss.y + boss.height / 4,
+                boss.width / 2, boss.height / 2);
+        g.setColor(Color.BLACK);
+        g.fillOval(boss.x + boss.width * 3 / 8, boss.y + boss.height * 3 / 8,
+                boss.width / 8, boss.height / 8);
+        g.fillOval(boss.x + boss.width * 5 / 8 - boss.width / 8, boss.y + boss.height * 3 / 8,
+                boss.width / 8, boss.height / 8);
+        g.setColor(new Color(0, 255, 255));
+        g.drawLine(boss.x + boss.width / 4, boss.y + boss.height / 2,
+                boss.x + boss.width * 3 / 4, boss.y + boss.height / 2);
+        g.drawLine(boss.x + boss.width / 2, boss.y + boss.height / 4,
+                boss.x + boss.width / 2, boss.y + boss.height * 3 / 4);
+        g.setColor(new Color(128, 0, 128));
+        int[] xLeftArm = {
+                boss.x,
+                boss.x - boss.width / 4,
+                boss.x
+        };
+        int[] yLeftArm = {
+                boss.y + boss.height / 2,
+                boss.y + boss.height * 3 / 8,
+                boss.y + boss.height * 5 / 8
+        };
+        g.fillPolygon(xLeftArm, yLeftArm, 3);
+        int[] xRightArm = {
+                boss.x + boss.width,
+                boss.x + boss.width * 5 / 4,
+                boss.x + boss.width
+        };
+        int[] yRightArm = {
+                boss.y + boss.height / 2,
+                boss.y + boss.height * 3 / 8,
+                boss.y + boss.height * 5 / 8
+        };
+        g.fillPolygon(xRightArm, yRightArm, 3);
+        g.setColor(new Color(255, 255, 255, 100));
+        g.fillOval(boss.x + boss.width * 3 / 8, boss.y + boss.height * 3 / 8,
+                boss.width / 4, boss.height / 4);
+    }
+
+    private void drawNewAlien(Graphics2D g, GameObject alien) {
+        if (alien.color.equals("CYAN")) g.setColor(Color.cyan);
+        else if (alien.color.equals("MAGENTA")) g.setColor(Color.magenta);
+        else if (alien.color.equals("YELLOW")) g.setColor(Color.yellow);
+        else if (alien.color.equals("ORANGE")) g.setColor(new Color(255, 165, 0));
+
+        int[] xStar = {
+                alien.x + alien.width / 2,
+                alien.x + alien.width * 3 / 5,
+                alien.x + alien.width * 3 / 4,
+                alien.x + alien.width / 2,
+                alien.x + alien.width / 4,
+                alien.x + alien.width * 2 / 5,
+        };
+        int[] yStar = {
+                alien.y,
+                alien.y + alien.height / 3,
+                alien.y + alien.height * 2 / 3,
+                alien.y + alien.height,
+                alien.y + alien.height * 2 / 3,
+                alien.y + alien.height / 3
+        };
+        g.fillPolygon(xStar, yStar, 6);
+        g.setColor(Color.BLACK);
+        g.fillOval(alien.x + alien.width * 3 / 8, alien.y + alien.height * 3 / 8,
+                alien.width / 4, alien.height / 4);
+        g.setColor(new Color(255, 255, 255, 100));
+        g.fillOval(alien.x + alien.width * 7 / 16, alien.y + alien.height * 7 / 16,
+                alien.width / 8, alien.height / 8);
+    }
+
     private void drawBullet(Graphics2D g, GameObject bullet) {
         g.setColor(Color.white);
-        // Dibujar un rayo láser en lugar de un simple rectángulo
         g.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
-
-        // Añadir efecto de brillo
         g.setColor(Color.yellow);
         g.fillRect(bullet.x + bullet.width/4, bullet.y,
                 bullet.width/2, bullet.height/2);
     }
 
     private void drawAlienBullet(Graphics2D g, GameObject bullet) {
-        // Las balas de alien son rojas con forma diferente
         g.setColor(Color.red);
-
-        // Dibujar un láser alienígena con forma de diamante
         int[] xPoints = {
-                bullet.x + bullet.width/2,  // Punta superior
-                bullet.x + bullet.width,    // Derecha
-                bullet.x + bullet.width/2,  // Punta inferior
-                bullet.x                    // Izquierda
+                bullet.x + bullet.width/2,
+                bullet.x + bullet.width,
+                bullet.x + bullet.width/2,
+                bullet.x
         };
-
         int[] yPoints = {
-                bullet.y,                   // Punta superior
-                bullet.y + bullet.height/2, // Derecha
-                bullet.y + bullet.height,   // Punta inferior
-                bullet.y + bullet.height/2  // Izquierda
+                bullet.y,
+                bullet.y + bullet.height/2,
+                bullet.y + bullet.height,
+                bullet.y + bullet.height/2
         };
-
         g.fillPolygon(xPoints, yPoints, 4);
+        g.setColor(new Color(255, 128, 0));
+        g.fillOval(bullet.x + bullet.width/4, bullet.y + bullet.height/4,
+                bullet.width/2, bullet.height/2);
+    }
 
-        // Añadir efecto de brillo
-        g.setColor(new Color(255, 128, 0)); // Naranja
+    private void drawBossBullet(Graphics2D g, GameObject bullet) {
+        g.setColor(new Color(128, 0, 128)); // Morado oscuro
+        int[] xPoints = {
+                bullet.x + bullet.width/2,
+                bullet.x + bullet.width,
+                bullet.x + bullet.width/2,
+                bullet.x
+        };
+        int[] yPoints = {
+                bullet.y,
+                bullet.y + bullet.height/2,
+                bullet.y + bullet.height,
+                bullet.y + bullet.height/2
+        };
+        g.fillPolygon(xPoints, yPoints, 4);
+        g.setColor(new Color(255, 0, 255)); // Magenta brillante
         g.fillOval(bullet.x + bullet.width/4, bullet.y + bullet.height/4,
                 bullet.width/2, bullet.height/2);
     }
