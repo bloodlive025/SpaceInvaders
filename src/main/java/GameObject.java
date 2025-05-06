@@ -9,7 +9,8 @@ public class GameObject implements Serializable {
     int playerId; // Para identificar a qué jugador pertenece este objeto
     String color; // Para los aliens (e.g., "CYAN", "MAGENTA", "YELLOW")
     int blockType = 0; // Nuevo campo para definir la forma del bloque (0-3)
-
+    int health;
+    public double velocityX, velocityY;
     public GameObject(int x, int y, int width, int height, String type, int playerId) {
         this.x = x;
         this.y = y;
@@ -19,5 +20,6 @@ public class GameObject implements Serializable {
         this.playerId = playerId;
         this.alive = true;
         this.used = false;
+        health = 3;
     }
 }
