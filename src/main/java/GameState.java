@@ -18,7 +18,9 @@ public class GameState {
     private boolean gameOver = false;
     private Random random = new Random();
     private long lastAlienShotTime = 0;
-    private int alienShotInterval = 500; // Milisegundos entre disparos
+
+    // MODIFICADO: Se aumentó el intervalo base de disparo de 500ms a 1500ms
+    private int alienShotInterval = 1500; // Milisegundos entre disparos (aumentado para reducir frecuencia)
 
     // Añadir sincronización
     private final Object gameStateLock = new Object();
@@ -136,12 +138,18 @@ public class GameState {
             // Lógica para que los aliens disparen
             long currentTime = System.currentTimeMillis();
             if (currentTime - lastAlienShotTime > alienShotInterval) {
-                alienShoot();
-                lastAlienShotTime = currentTime;
+                // MODIFICADO: Añadido un elemento de aleatoriedad adicional para reducir disparos
+                if (random.nextInt(100) < 40) { // Solo 40% de probabilidad de disparar cuando se cumple el intervalo
+                    alienShoot();
+                    lastAlienShotTime = currentTime;
 
-                // Ajustar la velocidad de disparo según la dificultad
-                // Cuantos menos aliens haya, más rápido dispararán
-                alienShotInterval = Math.max(200, 1000 - (1000 - alienCount * 5));
+                    // MODIFICADO: Reducida la velocidad de incremento de la dificultad
+                    // Cuantos menos aliens haya, más rápido dispararán pero con límites más altos
+                    alienShotInterval = Math.max(800, 2000 - (1000 - alienCount * 3));
+                } else {
+                    // Si no dispara, actualizamos el tiempo para que no intente inmediatamente
+                    lastAlienShotTime = currentTime;
+                }
             }
 
             // Mover balas del jugador y detectar colisiones
@@ -224,8 +232,15 @@ public class GameState {
 
         if (frontLineAliens.isEmpty()) return;
 
-        // Seleccionar aleatoriamente 1-3 aliens para disparar
-        int shootersCount = Math.min(3, frontLineAliens.size());
+        // MODIFICADO: Reducido el número máximo de disparadores
+        // Seleccionar aleatoriamente 1-2 aliens para disparar (antes era 1-3)
+        int shootersCount = Math.min(2, frontLineAliens.size());
+
+        // MODIFICADO: Añadida probabilidad aleatoria para tener aún menos disparadores
+        if (frontLineAliens.size() > 1 && random.nextInt(100) < 50) {
+            shootersCount = 1; // 50% de probabilidades de que solo dispare un alienígena
+        }
+
         List<GameObject> shooters = new ArrayList<>();
 
         // Convertir valores del mapa a una lista
@@ -320,7 +335,9 @@ public class GameState {
             score = 0;
             gameOver = false;
             alienVelocityX = 1;
-            alienShotInterval = 500; // Reiniciar el intervalo de disparo
+
+            // MODIFICADO: Reiniciar con un intervalo más largo (1500ms en lugar de 500ms)
+            alienShotInterval = 1500;
 
             // Crear nuevos aliens
             createAliens();
